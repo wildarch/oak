@@ -39,18 +39,17 @@ ABSL_FLAG(std::string, manager_address, "127.0.0.1:8888",
 ABSL_FLAG(std::string, module, "", "File containing the compiled WebAssembly module");
 ABSL_FLAG(std::string, app_address, "",
           "Address of the Oak Application to connect to (empty to create a new application)");
-ABSL_FLAG(std::string, room_id, "",
-          "Base64-encoded room ID to join (only used if room_name is blank)");
+ABSL_FLAG(std::string, authorization_token, "",
+          "Base64-encoded token to use for authentication and as label for outgoing messages");
 ABSL_FLAG(std::string, handle, "", "User handle to display");
 
-// RoomId type holds binary data (non-UTF-8, may have embedded NULs).
-using RoomId = std::string;
+// AuthorizationToken type holds binary data (non-UTF-8, may have embedded NULs).
+using AuthorizationToken = std::string;
 
 using ::oak::examples::chat::Chat;
 using ::oak::examples::chat::CreateRoomRequest;
 using ::oak::examples::chat::DestroyRoomRequest;
 using ::oak::examples::chat::Message;
-using ::oak::examples::chat::SendMessageRequest;
 using ::oak::examples::chat::SubscribeRequest;
 
 // Toy thread-safe class for (copyable) value types.
@@ -74,11 +73,10 @@ class Safe {
 
 void Prompt(const std::string& user_handle) { std::cout << user_handle << "> "; }
 
-void ListenLoop(Chat::Stub* stub, const RoomId& room_id, const std::string& user_handle,
+void ListenLoop(Chat::Stub* stub, const std::string& user_handle,
                 std::shared_ptr<Safe<bool>> done) {
   grpc::ClientContext context;
   SubscribeRequest req;
-  req.set_room_id(room_id);
   auto reader = stub->Subscribe(&context, req);
   if (reader == nullptr) {
     LOG(QFATAL) << "Could not call Subscribe";
@@ -91,17 +89,13 @@ void ListenLoop(Chat::Stub* stub, const RoomId& room_id, const std::string& user
     }
   }
   done->set(true);
-  std::cout << "\n\nRoom " << room_id << " closed.\n\n";
+  std::cout << "\n\nRoom closed.\n\n";
 }
 
-void SendLoop(Chat::Stub* stub, const RoomId& room_id, const std::string& user_handle,
-              std::shared_ptr<Safe<bool>> done) {
-  // Re-use the same SendMessageRequest object for each message.
-  SendMessageRequest req;
-  req.set_room_id(room_id);
-
-  Message* msg = req.mutable_message();
-  msg->set_user_handle(user_handle);
+void SendLoop(Chat::Stub* stub, const std::string& user_handle, std::shared_ptr<Safe<bool>> done) {
+  // Re-use the same Message object for each message.
+  Message req;
+  req.set_user_handle(user_handle);
 
   google::protobuf::Empty rsp;
 
@@ -112,7 +106,7 @@ void SendLoop(Chat::Stub* stub, const RoomId& room_id, const std::string& user_h
       break;
     }
     grpc::ClientContext context;
-    msg->set_text(text);
+    req.set_text(text);
     grpc::Status status = stub->SendMessage(&context, req, &rsp);
     if (!status.ok()) {
       LOG(WARNING) << "Could not SendMessage(): " << status.error_code() << ": "
@@ -122,29 +116,29 @@ void SendLoop(Chat::Stub* stub, const RoomId& room_id, const std::string& user_h
     Prompt(user_handle);
   }
   done->set(true);
-  std::cout << "\n\nLeaving room " << room_id << ".\n\n";
+  std::cout << "\n\nLeaving room.\n\n";
 }
 
-void Chat(Chat::Stub* stub, const RoomId& room_id, const std::string& user_handle) {
+void Chat(Chat::Stub* stub, const std::string& user_handle) {
   // TODO: make both loops notice immediately when done is true.
   auto done = std::make_shared<Safe<bool>>(false);
 
   // Start a separate thread for incoming messages.
-  std::thread listener([stub, room_id, &user_handle, done] {
-    LOG(INFO) << "New thread for incoming messages in room ID " << absl::Base64Escape(room_id);
-    ListenLoop(stub, room_id, user_handle, done);
+  std::thread listener([stub, &user_handle, done] {
+    LOG(INFO) << "New thread for incoming messages in room";
+    ListenLoop(stub, user_handle, done);
     LOG(INFO) << "Incoming message thread done";
   });
   listener.detach();
 
   std::cout << "\n\n\n";
-  SendLoop(stub, room_id, user_handle, done);
+  SendLoop(stub, user_handle, done);
 }
 
 // RAII class to handle creation/destruction of an Oak Application instance.
 class OakApplication {
  public:
-  // Caller should ensure that the manager_client outlives this object.
+  // Caller must ensure that the manager_client outlives this object.
   OakApplication(oak::ManagerClient* manager_client, const std::string& module)
       : manager_client_(manager_client) {
     // Load the Oak Module to execute. This needs to be compiled from Rust to WebAssembly
@@ -185,28 +179,25 @@ class OakApplication {
 // RAII class to handle creation/destruction of a chat room.
 class Room {
  public:
-  // Caller should ensure stub outlives this object.
+  // Caller must ensure stub outlives this object.
   Room(Chat::Stub* stub) : stub_(stub) {
     oak::NonceGenerator<64> generator;
     grpc::ClientContext context;
+    admin_token_ = oak::NonceToBytes(generator.NextNonce());
     CreateRoomRequest req;
-    auto room_id = generator.NextNonce();
-    auto room_id_string = std::string(room_id.begin(), room_id.end());
-    req_.set_room_id(room_id_string);
-    auto admin_token = generator.NextNonce();
-    req_.set_admin_token(std::string(admin_token.begin(), admin_token.end()));
+    req.set_admin_token(admin_token_);
     google::protobuf::Empty rsp;
-    grpc::Status status = stub_->CreateRoom(&context, req_, &rsp);
+    grpc::Status status = stub_->CreateRoom(&context, req, &rsp);
     if (!status.ok()) {
-      LOG(QFATAL) << "Could not CreateRoom('" << absl::Base64Escape(room_id_string)
-                  << "'): " << status.error_code() << ": " << status.error_message();
+      LOG(QFATAL) << "Could not CreateRoom(): " << status.error_code() << ": "
+                  << status.error_message();
     }
   }
   ~Room() {
     LOG(INFO) << "Destroying room";
     grpc::ClientContext context;
     DestroyRoomRequest req;
-    req.set_admin_token(req_.admin_token());
+    req.set_admin_token(admin_token_);
     google::protobuf::Empty rsp;
     grpc::Status status = stub_->DestroyRoom(&context, req, &rsp);
     if (!status.ok()) {
@@ -214,11 +205,10 @@ class Room {
                    << status.error_message();
     }
   }
-  const RoomId& Id() const { return req_.room_id(); }
 
  private:
   Chat::Stub* stub_;
-  CreateRoomRequest req_;
+  std::string admin_token_;
 };
 
 int main(int argc, char** argv) {
@@ -242,25 +232,31 @@ int main(int argc, char** argv) {
     LOG(INFO) << "Connecting to existing Oak Application at " << addr;
   }
 
+  AuthorizationToken authorization_token;
+  if (!absl::Base64Unescape(absl::GetFlag(FLAGS_authorization_token), &authorization_token)) {
+    LOG(QFATAL) << "Failed to parse --authorization_token as Base64";
+  }
+  if (authorization_token.empty()) {
+    LOG(INFO) << "Authorization token not provided, generating one";
+    oak::NonceGenerator<oak::kPerChannelNonceSizeBytes> nonce_generator;
+    authorization_token = oak::NonceToBytes(nonce_generator.NextNonce());
+    LOG(INFO) << "Generated authorization token: " << absl::Base64Escape(authorization_token);
+  }
+
   // Connect to the Oak Application.
-  // TODO(#488): Use the token provided on command line for authorization and labelling of data.
   oak::ApplicationClient::InitializeAssertionAuthorities();
-  auto stub = Chat::NewStub(oak::ApplicationClient::CreateChannel(addr));
+  auto stub = Chat::NewStub(oak::ApplicationClient::CreateChannel(
+      addr,
+      oak::ApplicationClient::authorization_bearer_token_call_credentials(authorization_token)));
   if (stub == nullptr) {
     LOG(QFATAL) << "Failed to create application stub";
   }
 
-  RoomId room_id;
-  if (!absl::Base64Unescape(absl::GetFlag(FLAGS_room_id), &room_id)) {
-    LOG(QFATAL) << "Failed to parse --room_id as base 64";
-  }
-  std::unique_ptr<Room> room;
-  if (room_id.empty()) {
-    room = absl::make_unique<Room>(stub.get());
-    room_id = room->Id();
-    LOG(INFO) << "Join this room with --app_address=" << addr
-              << " --room_id=" << absl::Base64Escape(room_id);
-  }
+  // This `Room` object creates and destroys the room with the associated label.
+  auto room = absl::make_unique<Room>(stub.get());
+
+  LOG(INFO) << "Join this room with --app_address=" << addr
+            << " --authorization_token=" << absl::Base64Escape(authorization_token);
 
   // Calculate a user handle.
   std::string user_handle = absl::GetFlag(FLAGS_handle);
@@ -272,7 +268,7 @@ int main(int argc, char** argv) {
   }
 
   // Main chat loop.
-  Chat(stub.get(), room_id, user_handle);
+  Chat(stub.get(), user_handle);
 
   return EXIT_SUCCESS;
 }

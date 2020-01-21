@@ -14,137 +14,72 @@
 // limitations under the License.
 //
 
-use command::Command;
 use log::info;
-use oak::grpc;
+use oak::grpc::Invocation;
 use oak::grpc::OakNode;
-use oak_derive::OakExports;
-use proto::chat::{CreateRoomRequest, DestroyRoomRequest, SendMessageRequest, SubscribeRequest};
-use proto::chat_grpc::{dispatch, ChatNode};
-use protobuf::well_known_types::Empty;
-use protobuf::Message;
-use std::collections::hash_map::Entry;
+use oak::Node;
 use std::collections::HashMap;
 
 mod backend;
-mod command;
 mod proto;
 
-type RoomId = Vec<u8>;
-type AdminToken = Vec<u8>;
-
-#[derive(OakExports, Default)]
-struct Node {
-    rooms: HashMap<RoomId, Room>,
+/// An Oak Node that routes incoming gRPC connections to Room nodes, according to the label attached
+/// by the client to the incoming gRPC request.
+///
+/// For each incoming gRPC invocation, it checks the corresponding label, and if a Room node
+/// handling that label already exists, forwards the connection to it, without looking at the
+/// incoming request (which would otherwise taint this node with the corresponding label). If a Room
+/// node for that label does not exist, it creates one, together with a channel, and keeps the write
+/// end of that channel in an in-memory map, keyed by the label.create_room_node()
+///
+/// In principle anyone would be able to send data with a specific label, since labels themselves
+/// are public. Therefore there is no guarantee that labelled data that arrives to the Room node
+/// actually originates from one of the other users of the Room. This problem is instead solved by
+/// integrity labels, which are not supported at the moment.
+///
+/// Note that this node only ever observes public data (including labels), and never changes its own
+/// label from "public".
+#[derive(Default)]
+struct Router {
+    rooms: HashMap<oak::label::Label, oak::io::Sender<Invocation>>,
 }
 
-struct Room {
-    sender: oak::io::Sender<Command>,
-    admin_token: AdminToken,
-}
-
-impl Room {
-    fn new(admin_token: AdminToken) -> Self {
-        let (wh, rh) = oak::channel_create().unwrap();
-        oak::node_create("app", "backend_oak_main", rh).expect("could not create node");
-        oak::channel_close(rh.handle).expect("could not close channel");
-        Room {
-            sender: oak::io::Sender::new(wh),
-            admin_token,
-        }
-    }
-}
-
-impl OakNode for Node {
-    fn new() -> Self {
+// TODO(#462): Change application configuration to use this function as main entry point.
+#[no_mangle]
+pub extern "C" fn router_oak_main(in_handle: u64) {
+    let _ = std::panic::catch_unwind(|| {
         oak_log::init_default();
-        Node::default()
+        oak::set_panic_hook();
+        let router = Router::default();
+        ::oak::run_event_loop(router, in_handle);
+    });
+}
+
+// TODO: Make this node generic over a trait `Routable` or similar, which determines what to route
+// incoming messages based on.
+impl Node<Invocation> for Router {
+    fn new() -> Self {
+        Router::default()
     }
-    fn invoke(&mut self, method: &str, req: &[u8], writer: grpc::ChannelResponseWriter) {
-        dispatch(self, method, req, writer)
+
+    fn handle_command(&mut self, grpc_invocation: Invocation) -> Result<(), oak::OakError> {
+        let grpc_invocation_label = grpc_invocation.request_receiver.label()?;
+        info!(
+            "handling incoming gRPC invocation with label {:?}",
+            grpc_invocation_label
+        );
+        let room_node_sender = self
+            .rooms
+            .entry(grpc_invocation_label.clone())
+            .or_insert_with(|| create_room_node(&grpc_invocation_label));
+        room_node_sender.send(&grpc_invocation)
     }
 }
 
-fn room_id_not_found_err<T>() -> grpc::Result<T> {
-    Err(grpc::build_status(grpc::Code::NOT_FOUND, "room not found"))
-}
-
-fn room_id_duplicate_err<T>() -> grpc::Result<T> {
-    Err(grpc::build_status(
-        grpc::Code::ALREADY_EXISTS,
-        "room already exists",
-    ))
-}
-
-impl ChatNode for Node {
-    fn create_room(&mut self, req: CreateRoomRequest) -> grpc::Result<Empty> {
-        info!("creating room");
-        if self.rooms.contains_key(&req.room_id) {
-            return room_id_duplicate_err();
-        }
-
-        // Create a new Node for this room, and keep the write handle and admin token in the `rooms`
-        // map.
-        self.rooms.insert(req.room_id, Room::new(req.admin_token));
-
-        Ok(Empty::new())
-    }
-
-    fn destroy_room(&mut self, req: DestroyRoomRequest) -> grpc::Result<Empty> {
-        info!("destroying room");
-        match self.rooms.entry(req.room_id) {
-            Entry::Occupied(e) => {
-                if e.get().admin_token == req.admin_token {
-                    // Close the only input channel that reaches the per-room Node, which
-                    // will trigger it to terminate.
-                    e.get().sender.close().expect("could not close channel");
-                    e.remove();
-                    Ok(Empty::new())
-                } else {
-                    Err(grpc::build_status(
-                        grpc::Code::PERMISSION_DENIED,
-                        "invalid admin token",
-                    ))
-                }
-            }
-            Entry::Vacant(_) => room_id_not_found_err(),
-        }
-    }
-
-    fn subscribe(&mut self, req: SubscribeRequest, mut writer: grpc::ChannelResponseWriter) {
-        info!("subscribing to room");
-        match self.rooms.get(&req.room_id) {
-            None => {
-                writer
-                    .close(room_id_not_found_err())
-                    .expect("could not close channel");
-            }
-            Some(room) => {
-                info!("new subscription to room {:?}", req.room_id);
-                let command = Command::Join(writer.handle());
-                room.sender
-                    .send(&command)
-                    .expect("could not send command to room Node");
-            }
-        };
-    }
-
-    fn send_message(&mut self, req: SendMessageRequest) -> grpc::Result<Empty> {
-        info!("sending message to room");
-        match self.rooms.get(&req.room_id) {
-            None => room_id_not_found_err(),
-            Some(room) => {
-                info!("new message to room {:?}", req.room_id);
-                let message_bytes = req
-                    .get_message()
-                    .write_to_bytes()
-                    .expect("could not convert message to bytes");
-                let command = Command::SendMessage(message_bytes);
-                room.sender
-                    .send(&command)
-                    .expect("could not send command to room Node");
-                Ok(Empty::new())
-            }
-        }
-    }
+fn create_room_node(grpc_invocation_label: &oak::label::Label) -> oak::io::Sender<Invocation> {
+    let (wh, rh) = oak::channel_create_with_label(grpc_invocation_label).unwrap();
+    oak::node_create_with_label("room-config", "oak_main", rh, grpc_invocation_label)
+        .expect("could not create node");
+    oak::channel_close(rh.handle).expect("could not close channel");
+    oak::io::Sender::new(wh)
 }

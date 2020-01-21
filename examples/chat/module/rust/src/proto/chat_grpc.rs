@@ -28,7 +28,8 @@ pub trait ChatNode {
     fn create_room(&mut self, req: super::chat::CreateRoomRequest) -> grpc::Result<protobuf::well_known_types::Empty>;
     fn destroy_room(&mut self, req: super::chat::DestroyRoomRequest) -> grpc::Result<protobuf::well_known_types::Empty>;
     fn subscribe(&mut self, req: super::chat::SubscribeRequest, writer: grpc::ChannelResponseWriter);
-    fn send_message(&mut self, req: super::chat::SendMessageRequest) -> grpc::Result<protobuf::well_known_types::Empty>;
+    fn send_message(&mut self, req: super::chat::Message) -> grpc::Result<protobuf::well_known_types::Empty>;
+    fn get_all_messages_count(&mut self, req: protobuf::well_known_types::Empty) -> grpc::Result<super::chat::GetAllMessagesCountResponse>;
 }
 
 // Oak Node gRPC method dispatcher
@@ -38,6 +39,7 @@ pub fn dispatch<T: ChatNode>(node: &mut T, method: &str, req: &[u8], writer: grp
         "/oak.examples.chat.Chat/DestroyRoom" => grpc::handle_req_rsp(|r| node.destroy_room(r), req, writer),
         "/oak.examples.chat.Chat/Subscribe" => grpc::handle_req_stream(|r, w| node.subscribe(r, w), req, writer),
         "/oak.examples.chat.Chat/SendMessage" => grpc::handle_req_rsp(|r| node.send_message(r), req, writer),
+        "/oak.examples.chat.Chat/GetAllMessagesCount" => grpc::handle_req_rsp(|r| node.get_all_messages_count(r), req, writer),
         _ => {
             panic!("unknown method name: {}", method);
         }

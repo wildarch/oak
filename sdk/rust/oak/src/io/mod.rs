@@ -30,9 +30,16 @@ pub use receiver::Receiver;
 pub use sender::Sender;
 
 /// Create a new channel for transmission of `Encodable` and `Decodable` types.
-pub fn channel_create<T: Encodable + Decodable>() -> Result<(Sender<T>, Receiver<T>), OakStatus> {
-    let (wh, rh) = crate::channel_create()?;
+pub fn channel_create_with_label<T: Encodable + Decodable>(
+    _label: &crate::label::Label,
+) -> Result<(Sender<T>, Receiver<T>), OakStatus> {
+    let (wh, rh) = crate::channel_create_with_label(_label)?;
     Ok((Sender::<T>::new(wh), Receiver::<T>::new(rh)))
+}
+
+pub fn channel_create<T: Encodable + Decodable>() -> Result<(Sender<T>, Receiver<T>), OakStatus> {
+    let node_label = crate::label::get_node_label()?;
+    channel_create_with_label(&node_label)
 }
 
 /// A simple holder for bytes + handles, using internally owned buffers.

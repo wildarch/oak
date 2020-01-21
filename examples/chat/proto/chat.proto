@@ -21,39 +21,28 @@ package oak.examples.chat;
 import "google/protobuf/empty.proto";
 
 message CreateRoomRequest {
-  // ID used to identify the room; knowledge of this value allows entry to the room. The client
-  // should create a random bearer token of sufficient entropy to use as the room ID.
-  //
-  // TODO(#212): Once more of the labelling / policy system is implemented in the Oak Runtime, the
-  // secrecy of each chat room will not be based on the secrecy of this value, rather by the labels
-  // attached to individual messages by the various clients.
-  bytes room_id = 1;
-
   // Bearer token used to administer the room; knowledge of this value allows control over the room
   // (including the ability to destroy the room). The client should create a random bearer token of
   // sufficient entropy to use as the admin token.
-  bytes admin_token = 2;
+  bytes admin_token = 1;
 }
 
 message DestroyRoomRequest {
-  bytes room_id = 1;
-  bytes admin_token = 2;
+  bytes admin_token = 1;
 }
 
 message SubscribeRequest {
-  bytes room_id = 1;
 }
 
 message Message {
   // Handle for the user; this is only used for UI purposes (and so does not need to be unique nor
   // persistent).
-  string user_handle = 2;
-  string text = 1;
+  string user_handle = 1;
+  string text = 2;
 }
 
-message SendMessageRequest {
-  bytes room_id = 1;
-  Message message = 3;
+message GetAllMessagesCountResponse {
+  uint64 messages_count = 1;
 }
 
 service Chat {
@@ -64,5 +53,7 @@ service Chat {
   rpc Subscribe(SubscribeRequest) returns (stream Message);
 
   // Send a message to a chat room.
-  rpc SendMessage(SendMessageRequest) returns (google.protobuf.Empty);
+  rpc SendMessage(Message) returns (google.protobuf.Empty);
+
+  rpc GetAllMessagesCount(google.protobuf.Empty) returns (GetAllMessagesCountResponse);
 }

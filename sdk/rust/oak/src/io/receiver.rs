@@ -66,6 +66,12 @@ impl<T: Decodable> Receiver<T> {
         T::decode(&message)
     }
 
+    #[allow(clippy::trivially_copy_pass_by_ref)]
+    pub fn label(&self) -> Result<crate::label::Label, OakError> {
+        // TODO: Implement this via `oak_abi`.
+        Ok(crate::label::Label(vec![1, 2, 3]))
+    }
+
     /// Wait for a value to be available from this receiver.
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn wait(&self) -> Result<(), OakStatus> {

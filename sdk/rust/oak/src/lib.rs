@@ -27,6 +27,7 @@ pub use error::OakError;
 
 pub mod grpc;
 pub mod io;
+pub mod label;
 pub mod proto;
 pub mod rand;
 pub mod storage;
@@ -298,11 +299,18 @@ pub fn channel_write(half: WriteHandle, buf: &[u8], handles: &[Handle]) -> Resul
     result_from_status(status as i32, ())
 }
 
-/// Create a new unidirectional channel.
+/// Create a new unidirectional channel with the specified label.
+///
+/// Only nodes with a compatible label will be able to read and write to this channel:
+///
+/// - A node with label `L_w` may write to a channel with label `L_c` iff `L_w ⊑ L_c`.
+/// - A node with label `L_r` may read from a channel with label `L_c` iff `L_c ⊑ L_r`.
 ///
 /// On success, returns [`WriteHandle`] and a [`ReadHandle`] values for the
 /// write and read halves (respectively).
-pub fn channel_create() -> Result<(WriteHandle, ReadHandle), OakStatus> {
+pub fn channel_create_with_label(
+    _label: &crate::label::Label,
+) -> Result<(WriteHandle, ReadHandle), OakStatus> {
     let mut write = WriteHandle {
         handle: Handle::invalid(),
     };
@@ -318,6 +326,11 @@ pub fn channel_create() -> Result<(WriteHandle, ReadHandle), OakStatus> {
     result_from_status(status as i32, (write, read))
 }
 
+pub fn channel_create() -> Result<(WriteHandle, ReadHandle), OakStatus> {
+    let node_label = crate::label::get_node_label()?;
+    channel_create_with_label(&node_label)
+}
+
 /// Close the specified channel [`Handle`].
 pub fn channel_close(handle: Handle) -> Result<(), OakStatus> {
     let status = unsafe { oak_abi::channel_close(handle.id) };
@@ -327,10 +340,11 @@ pub fn channel_close(handle: Handle) -> Result<(), OakStatus> {
 /// Create a new Node running the configuration identified by `config_name`,
 /// running the entrypoint identified by `entrypoint_name` (for a Web Assembly
 /// Node), passing it the given handle.
-pub fn node_create(
+pub fn node_create_with_label(
     config_name: &str,
     entrypoint_name: &str,
     half: ReadHandle,
+    _label: &crate::label::Label,
 ) -> Result<(), OakStatus> {
     let status = unsafe {
         oak_abi::node_create(
@@ -342,6 +356,15 @@ pub fn node_create(
         )
     };
     result_from_status(status as i32, ())
+}
+
+pub fn node_create(
+    config_name: &str,
+    entrypoint_name: &str,
+    half: ReadHandle,
+) -> Result<(), OakStatus> {
+    let node_label = crate::label::get_node_label()?;
+    node_create_with_label(config_name, entrypoint_name, half, &node_label)
 }
 
 /// Fill a buffer with random data.
