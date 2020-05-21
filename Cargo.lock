@@ -1359,6 +1359,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "oak_inc"
+version = "0.1.0"
+dependencies = [
+ "bytes 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "oak 0.1.0",
+ "oak_abi 0.1.0",
+ "oak_inc_derive 0.1.0",
+]
+
+[[package]]
+name = "oak_inc_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2 1.0.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quote 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 1.0.18 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "oak_loader"
 version = "0.1.0"
 dependencies = [

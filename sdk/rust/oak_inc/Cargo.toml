@@ -1,0 +1,11 @@
+[package]
+name = "oak_inc"
+version = "0.1.0"
+authors = ["Daan de Graaf <daandegraaf9@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+oak_inc_derive = { path = "oak_inc_derive" }
+oak = "*"
+oak_abi = "*"
+bytes = "*"
