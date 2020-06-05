@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["configure_and_run","Configures a [`RuntimeProxy`] from the given protobuf [`ApplicationConfiguration`] and begins execution."]]});

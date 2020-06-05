@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["init","Initialize Node-wide logging via a channel to a logging pseudo-Node."],["init_default","Initialize Node-wide default logging."]]});
