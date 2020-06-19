@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `oak/server/rust/oak_loader/src/main.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>main.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../oak_loader/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `rust/oak_loader/src/main.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>main.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../oak_loader/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1">  1</span>
 <span id="2">  2</span>
 <span id="3">  3</span>
 <span id="4">  4</span>
@@ -266,6 +266,25 @@
 <span id="266">266</span>
 <span id="267">267</span>
 <span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">//</span>
 <span class="comment">// Copyright 2020 The Project Oak Authors</span>
@@ -288,14 +307,14 @@
 <span class="doccomment">//! Invoke with:</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ```shell</span>
-<span class="doccomment">//! cargo run --package=oak_loader -- \</span>
+<span class="doccomment">//! cargo run --manifest-path=oak/server/rust/oak_loader/Cargo.toml -- \</span>
 <span class="doccomment">//!     --application=&lt;APP_CONFIG_PATH&gt; \</span>
 <span class="doccomment">//!     --grpc-tls-private-key=&lt;PRIVATE_KEY_PATH&gt; \</span>
 <span class="doccomment">//!     --grpc-tls-certificate=&lt;CERTIFICATE_PATH&gt; \</span>
 <span class="doccomment">//!     --root-tls-certificate=&lt;CERTIFICATE_PATH&gt;</span>
 <span class="doccomment">//! ```</span>
 
-<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">anyhow</span>, <span class="ident">Context</span>};
+<span class="kw">use</span> <span class="ident">anyhow</span>::{<span class="ident">anyhow</span>, <span class="ident">bail</span>, <span class="ident">Context</span>};
 <span class="kw">use</span> <span class="ident">core</span>::<span class="ident">str</span>::<span class="ident">FromStr</span>;
 <span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">debug</span>, <span class="ident">error</span>, <span class="ident">info</span>};
 <span class="kw">use</span> <span class="ident">oak_abi</span>::{
@@ -312,6 +331,7 @@
 <span class="kw">use</span> <span class="ident">std</span>::{
     <span class="ident">collections</span>::<span class="ident">HashMap</span>,
     <span class="ident">fs</span>::{<span class="ident">read_to_string</span>, <span class="ident">File</span>},
+    <span class="ident">include_bytes</span>,
     <span class="ident">io</span>::<span class="ident">Read</span>,
     <span class="ident">sync</span>::{
         <span class="ident">atomic</span>::{<span class="ident">AtomicBool</span>, <span class="ident">Ordering</span>},
@@ -337,11 +357,15 @@
         <span class="ident">help</span> <span class="op">=</span> <span class="string">&quot;PEM encoded X.509 TLS certificate file used by gRPC server pseudo-Nodes.&quot;</span>
     )]</span>
     <span class="ident">grpc_tls_certificate</span>: <span class="ident">String</span>,
-    <span class="attribute">#[<span class="ident">structopt</span>(
-        <span class="ident">long</span>,
-        <span class="ident">help</span> <span class="op">=</span> <span class="string">&quot;PEM encoded X.509 TLS root certificate file used to authenticate an external gRPC service.&quot;</span>
+    <span class="comment">// Only support `root-tls-certificate` when `oak_debug` is enabled.</span>
+    <span class="attribute">#[<span class="ident">cfg_attr</span>(
+        <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;oak_debug&quot;</span>,
+        <span class="ident">structopt</span>(
+            <span class="ident">long</span>,
+            <span class="ident">help</span> <span class="op">=</span> <span class="string">&quot;PEM encoded X.509 TLS root certificate file used to authenticate an external gRPC service.&quot;</span>
+        )
     )]</span>
-    <span class="ident">root_tls_certificate</span>: <span class="ident">String</span>,
+    <span class="ident">root_tls_certificate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
     <span class="attribute">#[<span class="ident">structopt</span>(
         <span class="ident">long</span>,
         <span class="ident">help</span> <span class="op">=</span> <span class="string">&quot;Path to the downloaded JSON-encoded client identity file for OpenID Connect. \
@@ -427,6 +451,14 @@
         .<span class="ident">context</span>(<span class="string">&quot;could not send configuration map to the initial Node&quot;</span>)
 }
 
+<span class="doccomment">/// Gets the default root TLS certificates from the embedded byte array.</span>
+<span class="kw">fn</span> <span class="ident">get_default_root_tls_certs</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">anyhow</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">from_utf8</span>(<span class="macro">include_bytes</span><span class="macro">!</span>(<span class="string">&quot;certs/roots.pem&quot;</span>))
+        .<span class="ident">context</span>(<span class="string">&quot;could not read embedded PEM-encoded root TLS certificates as a UTF8 string&quot;</span>)<span class="question-mark">?</span>
+        .<span class="ident">to_owned</span>();
+    <span class="prelude-val">Ok</span>(<span class="ident">result</span>)
+}
+
 <span class="doccomment">/// Main execution point for the Oak loader.</span>
 <span class="kw">fn</span> <span class="ident">main</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="ident">anyhow</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
     <span class="kw">if</span> <span class="macro">cfg</span><span class="macro">!</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;oak_debug&quot;</span>) {
@@ -446,8 +478,46 @@
     <span class="comment">// Load application configuration.</span>
     <span class="kw">let</span> <span class="ident">app_config_data</span> <span class="op">=</span>
         <span class="ident">read_file</span>(<span class="kw-2">&amp;</span><span class="ident">opt</span>.<span class="ident">application</span>).<span class="ident">context</span>(<span class="string">&quot;could not read application configuration&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">application_configuration</span> <span class="op">=</span> <span class="ident">ApplicationConfiguration</span>::<span class="ident">decode</span>(<span class="ident">app_config_data</span>.<span class="ident">as_ref</span>())
+    <span class="kw">let</span> <span class="ident">app_config</span> <span class="op">=</span> <span class="ident">ApplicationConfiguration</span>::<span class="ident">decode</span>(<span class="ident">app_config_data</span>.<span class="ident">as_ref</span>())
         .<span class="ident">context</span>(<span class="string">&quot;could not parse application configuration&quot;</span>)<span class="question-mark">?</span>;
+
+    <span class="comment">// Create the overall gRPC configuration.</span>
+    <span class="kw">let</span> <span class="ident">grpc_tls_private_key</span> <span class="op">=</span>
+        <span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">opt</span>.<span class="ident">grpc_tls_private_key</span>).<span class="ident">context</span>(<span class="string">&quot;could not read gRPC TLS private key&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">grpc_tls_certificate</span> <span class="op">=</span>
+        <span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">opt</span>.<span class="ident">grpc_tls_certificate</span>).<span class="ident">context</span>(<span class="string">&quot;could not read gRPC TLS certificate&quot;</span>)<span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">root_tls_certificate</span> <span class="op">=</span> <span class="kw">match</span> <span class="kw-2">&amp;</span><span class="ident">opt</span>.<span class="ident">root_tls_certificate</span> {
+        <span class="prelude-val">Some</span>(<span class="ident">certificate_path</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="kw">if</span> <span class="op">!</span><span class="macro">cfg</span><span class="macro">!</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;oak_debug&quot;</span>) {
+                <span class="comment">// Unreachable: it should not be possible to specify the flag without `oak_debug`.</span>
+                <span class="macro">bail</span><span class="macro">!</span>(<span class="string">&quot;Specifying `root-tls-certificate` requires the `oak_debug` feature.&quot;</span>);
+            };
+            <span class="ident">read_to_string</span>(<span class="ident">certificate_path</span>).<span class="ident">context</span>(<span class="string">&quot;could not read root TLS certificate&quot;</span>)<span class="question-mark">?</span>
+        }
+        <span class="prelude-val">None</span> <span class="op">=</span><span class="op">&gt;</span> <span class="ident">get_default_root_tls_certs</span>()<span class="question-mark">?</span>,
+    };
+    <span class="kw">let</span> <span class="ident">oidc_client_info</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">opt</span>.<span class="ident">oidc_client</span> {
+        <span class="prelude-val">Some</span>(<span class="ident">oidc_client</span>) <span class="op">=</span><span class="op">&gt;</span> {
+            <span class="kw">let</span> <span class="ident">oidc_file</span> <span class="op">=</span> <span class="ident">read_to_string</span>(<span class="ident">oidc_client</span>)
+                .<span class="ident">context</span>(<span class="string">&quot;could not read OpenID Connect client configuration file&quot;</span>)<span class="question-mark">?</span>;
+            <span class="prelude-val">Some</span>(
+                <span class="ident">parse_client_info_json</span>(<span class="kw-2">&amp;</span><span class="ident">oidc_file</span>)
+                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">error</span><span class="op">|</span> <span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;Failed to parse json: {:?}&quot;</span>, <span class="ident">error</span>))<span class="question-mark">?</span>,
+            )
+        }
+        <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">None</span>,
+    };
+    <span class="kw">let</span> <span class="ident">grpc_config</span> <span class="op">=</span> <span class="ident">oak_runtime</span>::<span class="ident">GrpcConfiguration</span> {
+        <span class="ident">grpc_server_tls_identity</span>: <span class="prelude-val">Some</span>(<span class="ident">Identity</span>::<span class="ident">from_pem</span>(
+            <span class="ident">grpc_tls_certificate</span>,
+            <span class="ident">grpc_tls_private_key</span>,
+        )),
+        <span class="ident">grpc_client_root_tls_certificate</span>: <span class="prelude-val">Some</span>(
+            <span class="ident">load_certificate</span>(<span class="kw-2">&amp;</span><span class="ident">root_tls_certificate</span>)
+                .<span class="ident">map_err</span>(<span class="op">|</span>()<span class="op">|</span> <span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;could not parse TLS certificate&quot;</span>))<span class="question-mark">?</span>,
+        ),
+        <span class="ident">oidc_client_info</span>,
+    };
 
     <span class="comment">// Create Runtime config.</span>
     <span class="kw">let</span> <span class="ident">runtime_configuration</span> <span class="op">=</span> <span class="ident">oak_runtime</span>::<span class="ident">RuntimeConfiguration</span> {
@@ -461,46 +531,14 @@
         } <span class="kw">else</span> {
             <span class="prelude-val">None</span>
         },
-    };
-
-    <span class="comment">// Create the overall gRPC configuration.</span>
-    <span class="kw">let</span> <span class="ident">grpc_tls_private_key</span> <span class="op">=</span>
-        <span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">opt</span>.<span class="ident">grpc_tls_private_key</span>).<span class="ident">context</span>(<span class="string">&quot;could not read gRPC TLS private key&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">grpc_tls_certificate</span> <span class="op">=</span>
-        <span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">opt</span>.<span class="ident">grpc_tls_certificate</span>).<span class="ident">context</span>(<span class="string">&quot;could not read gRPC TLS certificate&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">root_tls_certificate</span> <span class="op">=</span>
-        <span class="ident">read_to_string</span>(<span class="kw-2">&amp;</span><span class="ident">opt</span>.<span class="ident">root_tls_certificate</span>).<span class="ident">context</span>(<span class="string">&quot;could not read root TLS certificate&quot;</span>)<span class="question-mark">?</span>;
-    <span class="kw">let</span> <span class="ident">oidc_client_info</span> <span class="op">=</span> <span class="kw">match</span> <span class="ident">opt</span>.<span class="ident">oidc_client</span> {
-        <span class="prelude-val">Some</span>(<span class="ident">oidc_client</span>) <span class="op">=</span><span class="op">&gt;</span> {
-            <span class="kw">let</span> <span class="ident">oidc_file</span> <span class="op">=</span> <span class="ident">read_to_string</span>(<span class="ident">oidc_client</span>)
-                .<span class="ident">context</span>(<span class="string">&quot;could not read OpenID Connect client configuration file&quot;</span>)<span class="question-mark">?</span>;
-            <span class="prelude-val">Some</span>(
-                <span class="ident">parse_client_info_json</span>(<span class="kw-2">&amp;</span><span class="ident">oidc_file</span>)
-                    .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">error</span><span class="op">|</span> <span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;Failed to parse json: {:?}&quot;</span>, <span class="ident">error</span>))<span class="question-mark">?</span>,
-            )
-        }
-        <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> <span class="prelude-val">None</span>,
-    };
-    <span class="kw">let</span> <span class="ident">grpc_configuration</span> <span class="op">=</span> <span class="ident">oak_runtime</span>::<span class="ident">GrpcConfiguration</span> {
-        <span class="ident">grpc_server_tls_identity</span>: <span class="prelude-val">Some</span>(<span class="ident">Identity</span>::<span class="ident">from_pem</span>(
-            <span class="ident">grpc_tls_certificate</span>,
-            <span class="ident">grpc_tls_private_key</span>,
-        )),
-        <span class="ident">grpc_client_root_tls_certificate</span>: <span class="prelude-val">Some</span>(
-            <span class="ident">load_certificate</span>(<span class="kw-2">&amp;</span><span class="ident">root_tls_certificate</span>)
-                .<span class="ident">map_err</span>(<span class="op">|</span>()<span class="op">|</span> <span class="macro">anyhow</span><span class="macro">!</span>(<span class="string">&quot;could not parse TLS certificate&quot;</span>))<span class="question-mark">?</span>,
-        ),
-        <span class="ident">oidc_client_info</span>,
+        <span class="ident">grpc_config</span>,
+        <span class="ident">app_config</span>,
     };
 
     <span class="comment">// Start the Runtime from the given config.</span>
-    <span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;starting Runtime, config {:?}&quot;</span>, <span class="ident">runtime_configuration</span>);
-    <span class="kw">let</span> (<span class="ident">runtime</span>, <span class="ident">initial_handle</span>) <span class="op">=</span> <span class="ident">configure_and_run</span>(
-        <span class="ident">application_configuration</span>,
-        <span class="ident">runtime_configuration</span>,
-        <span class="ident">grpc_configuration</span>,
-    )
-    .<span class="ident">context</span>(<span class="string">&quot;could not start Runtime&quot;</span>)<span class="question-mark">?</span>;
+    <span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;starting Runtime&quot;</span>);
+    <span class="kw">let</span> (<span class="ident">runtime</span>, <span class="ident">initial_handle</span>) <span class="op">=</span>
+        <span class="ident">configure_and_run</span>(<span class="ident">runtime_configuration</span>).<span class="ident">context</span>(<span class="string">&quot;could not start Runtime&quot;</span>)<span class="question-mark">?</span>;
     <span class="macro">info</span><span class="macro">!</span>(
         <span class="string">&quot;initial node {:?} with write handle {:?}&quot;</span>,
         <span class="ident">runtime</span>.<span class="ident">node_id</span>, <span class="ident">initial_handle</span>
@@ -536,4 +574,4 @@
     <span class="prelude-val">Ok</span>(())
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "oak_loader";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "oak_loader";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>

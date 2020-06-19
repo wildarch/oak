@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `oak/server/rust/oak_runtime/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../oak_runtime/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1"> 1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `rust/oak_runtime/src/lib.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>lib.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="shortcut icon" href="../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../oak_runtime/index.html'><div class='logo-container'><img src='../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1"> 1</span>
 <span id="2"> 2</span>
 <span id="3"> 3</span>
 <span id="4"> 4</span>
@@ -65,6 +65,12 @@
 <span id="65">65</span>
 <span id="66">66</span>
 <span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">//</span>
 <span class="comment">// Copyright 2020 The Project Oak Authors</span>
@@ -91,7 +97,7 @@
 <span class="doccomment">//! be enabled in development, as it destroys the privacy guarantees of the</span>
 <span class="doccomment">//! platform by providing easy channels for the exfiltration of private data.</span>
 
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">proto</span>;
+<span class="kw">use</span> <span class="ident">oak_abi</span>::<span class="ident">proto</span>::<span class="ident">oak</span>::<span class="ident">application</span>::<span class="ident">ApplicationConfiguration</span>;
 
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">auth</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">config</span>;
@@ -99,6 +105,7 @@
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">message</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">metrics</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">node</span>;
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">proto</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">runtime</span>;
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">time</span>;
 
@@ -109,24 +116,29 @@
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">message</span>::<span class="ident">NodeMessage</span>;
 <span class="kw">pub</span> <span class="kw">use</span> <span class="ident">runtime</span>::{<span class="ident">NodeId</span>, <span class="ident">RuntimeProxy</span>};
 
-<span class="doccomment">/// Configuration options that govern the behaviour of the Runtime itself.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Debug</span>)]</span>
+<span class="doccomment">/// Configuration options that govern the behaviour of the Runtime and the Oak Application running</span>
+<span class="doccomment">/// inside it.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RuntimeConfiguration</span> {
     <span class="doccomment">/// Port to run a metrics server on, if provided.</span>
     <span class="kw">pub</span> <span class="ident">metrics_port</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u16</span><span class="op">&gt;</span>,
     <span class="doccomment">/// Port to run an introspection server on, if provided.</span>
     <span class="kw">pub</span> <span class="ident">introspect_port</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">u16</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// gRPC-specific options.</span>
+    <span class="kw">pub</span> <span class="ident">grpc_config</span>: <span class="ident">GrpcConfiguration</span>,
+    <span class="doccomment">/// Application configuration.</span>
+    <span class="kw">pub</span> <span class="ident">app_config</span>: <span class="ident">ApplicationConfiguration</span>,
 }
 
 <span class="doccomment">/// Configuration options related to gRPC pseudo-Nodes.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// `Debug` is intentionally not implemented in order to avoid accidentally logging secrets.</span>
-<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>)]</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Default</span>, <span class="ident">Clone</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">GrpcConfiguration</span> {
     <span class="doccomment">/// TLS identity to use for all gRPC Server Nodes.</span>
     <span class="kw">pub</span> <span class="ident">grpc_server_tls_identity</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Identity</span><span class="op">&gt;</span>,
 
-    <span class="doccomment">/// OpenID Connect Authentiction client information.</span>
+    <span class="doccomment">/// OpenID Connect Authentication client information.</span>
     <span class="kw">pub</span> <span class="ident">oidc_client_info</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">ClientInfo</span><span class="op">&gt;</span>,
 
     <span class="doccomment">/// Root TLS certificate to use for all gRPC Client Nodes.</span>
@@ -134,4 +146,4 @@
     <span class="kw">pub</span> <span class="ident">grpc_client_root_tls_certificate</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">Certificate</span><span class="op">&gt;</span>,
 }
 </pre></div>
-</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "oak_runtime";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
+</section><section id="search" class="content hidden"></section><section class="footer"></section><script>window.rootPath = "../../";window.currentCrate = "oak_runtime";</script><script src="../../main.js"></script><script src="../../source-script.js"></script><script src="../../source-files.js"></script><script defer src="../../search-index.js"></script></body></html>
