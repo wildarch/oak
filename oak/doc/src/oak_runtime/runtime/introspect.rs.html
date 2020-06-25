@@ -180,6 +180,11 @@
 <span id="180">180</span>
 <span id="181">181</span>
 <span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">//</span>
 <span class="comment">// Copyright 2020 The Project Oak Authors</span>
@@ -197,7 +202,7 @@
 <span class="comment">// limitations under the License.</span>
 <span class="comment">//</span>
 
-<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">runtime</span>::{<span class="ident">graph</span>::<span class="ident">DotGraph</span>, <span class="ident">Runtime</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">runtime</span>::<span class="ident">Runtime</span>;
 <span class="kw">use</span> <span class="ident">hyper</span>::{
     <span class="ident">service</span>::{<span class="ident">make_service_fn</span>, <span class="ident">service_fn</span>},
     <span class="ident">Body</span>, <span class="ident">Error</span>, <span class="ident">Method</span>, <span class="ident">Request</span>, <span class="ident">Response</span>, <span class="ident">Server</span>, <span class="ident">StatusCode</span>,
@@ -297,6 +302,11 @@
         <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Response</span>::<span class="ident">new</span>(<span class="ident">Body</span>::<span class="ident">from</span>(<span class="ident">dot_wrap</span>(
             <span class="string">&quot;Runtime Graph&quot;</span>,
             <span class="kw-2">&amp;</span><span class="ident">runtime</span>.<span class="ident">graph</span>(),
+        ))));
+    } <span class="kw">else</span> <span class="kw">if</span> <span class="ident">path</span> <span class="op">=</span><span class="op">=</span> <span class="string">&quot;/objcount&quot;</span> {
+        <span class="kw">return</span> <span class="prelude-val">Ok</span>(<span class="ident">Response</span>::<span class="ident">new</span>(<span class="ident">Body</span>::<span class="ident">from</span>(<span class="ident">html_wrap</span>(
+            <span class="string">&quot;Object Counts&quot;</span>,
+            <span class="kw-2">&amp;</span><span class="ident">runtime</span>.<span class="ident">html_counts</span>(),
         ))));
     } <span class="kw">else</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">node_id</span>) <span class="op">=</span> <span class="ident">find_id</span>(<span class="ident">path</span>, <span class="string">&quot;node&quot;</span>) {
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">body</span>) <span class="op">=</span> <span class="ident">runtime</span>.<span class="ident">html_for_node</span>(<span class="ident">node_id</span>) {
