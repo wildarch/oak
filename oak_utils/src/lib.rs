@@ -184,6 +184,8 @@ where
 {
     compile_protos_with_internal(
         prost_config
+            .type_attribute(".", "#[derive(::oak::handle::HandleVisit)]")
+            .extern_path(".oak.handle", "::oak::handle")
             .extern_path(".oak.encap.GrpcRequest", "::oak::grpc::GrpcRequest")
             .extern_path(".oak.encap.GrpcResponse", "::oak::grpc::GrpcResponse"),
         inputs,
@@ -213,13 +215,42 @@ fn compile_protos_with_internal<P>(
         .expect("could not run prost-build");
 }
 
-// For internal use in Oak.
+// Compiles protos for crates that can't depend on the oak SDK.
 #[doc(hidden)]
 pub fn compile_protos_internal<P>(inputs: &[P], includes: &[P])
 where
     P: AsRef<std::path::Path>,
 {
     compile_protos_with_internal(&mut prost_build::Config::new(), inputs, includes);
+}
+
+// Compiles protos for crates that can't depend on the oak SDK, but do need the service generator.
+#[doc(hidden)]
+pub fn compile_protos_internal_with_service_generator<P>(inputs: &[P], includes: &[P])
+where
+    P: AsRef<std::path::Path>,
+{
+    compile_protos_with_internal(
+        prost_build::Config::new().service_generator(Box::new(OakServiceGenerator)),
+        inputs,
+        includes,
+    );
+}
+
+// Like `compile_protos`, but also allows specifying the output directory.
+#[doc(hidden)]
+pub fn compile_protos_to<P, Q>(inputs: &[P], includes: &[P], out_dir: Q)
+where
+    P: AsRef<std::path::Path>,
+    Q: Into<std::path::PathBuf>,
+{
+    compile_protos_with(
+        prost_build::Config::new()
+            .out_dir(out_dir)
+            .service_generator(Box::new(OakServiceGenerator)),
+        inputs,
+        includes,
+    );
 }
 
 fn set_protoc_env_if_unset() {

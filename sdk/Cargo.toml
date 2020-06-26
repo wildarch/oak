@@ -10,6 +10,7 @@ members = ["rust/oak", "rust/oak_tests"]
 # Oak.
 oak = { path = "rust/oak" }
 oak_abi = { path = "../oak_abi" }
+oak_derive = { path = "rust/oak_derive" }
 oak_runtime = { path = "../oak/server/rust/oak_runtime" }
 oak_tests = { path = "rust/oak_tests" }
 oak_utils = { path = "../oak_utils" }

@@ -15,11 +15,21 @@
 //
 
 fn main() {
-    oak_utils::compile_protos(
+    oak_utils::compile_protos_internal_with_service_generator(
         &[
             "../../../oak/proto/storage_service.proto",
             "../../../oak/proto/roughtime_service.proto",
+            "../../../oak/proto/handle.proto",
         ],
         &["../../.."],
+    );
+
+    let mut handle_tests_out = std::path::PathBuf::from(std::env::var("OUT_DIR").unwrap());
+    handle_tests_out.push("handle_tests");
+    std::fs::create_dir_all(&handle_tests_out).unwrap();
+    oak_utils::compile_protos_to(
+        &["tests/handle_extract_inject.proto"],
+        &["tests/", "../../../oak/proto"],
+        handle_tests_out,
     );
 }

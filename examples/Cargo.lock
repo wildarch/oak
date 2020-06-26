@@ -1066,6 +1066,7 @@ dependencies = [
  "fmt",
  "log",
  "oak_abi",
+ "oak_derive",
  "oak_utils",
  "prost",
  "prost-types",
@@ -1082,6 +1083,15 @@ dependencies = [
  "prost",
  "prost-build",
  "prost-types",
+]
+
+[[package]]
+name = "oak_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
