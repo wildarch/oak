@@ -171,36 +171,77 @@ pub fn compile_protos<P>(inputs: &[P], includes: &[P])
 where
     P: AsRef<std::path::Path>,
 {
-    compile_protos_with(true, inputs, includes);
+    compile_protos_with(
+        prost_build::Config::new().service_generator(Box::new(OakServiceGenerator)),
+        inputs,
+        includes,
+    );
 }
 
-/// Build Rust code corresponding to a set of protocol buffer messages, skipping any service
-/// definitions, emitting generated code to crate's `OUT_DIR`.
-pub fn compile_protos_without_services<P>(inputs: &[P], includes: &[P])
+fn compile_protos_with<P>(prost_config: &mut prost_build::Config, inputs: &[P], includes: &[P])
 where
     P: AsRef<std::path::Path>,
 {
-    compile_protos_with(false, inputs, includes);
+    compile_protos_with_internal(
+        prost_config
+            .extern_path(".oak.encap.GrpcRequest", "::oak::grpc::GrpcRequest")
+            .extern_path(".oak.encap.GrpcResponse", "::oak::grpc::GrpcResponse"),
+        inputs,
+        includes,
+    )
 }
 
-fn compile_protos_with<P>(generate_services: bool, inputs: &[P], includes: &[P])
-where
+fn compile_protos_with_internal<P>(
+    prost_config: &mut prost_build::Config,
+    inputs: &[P],
+    includes: &[P],
+) where
     P: AsRef<std::path::Path>,
 {
+    set_protoc_env_if_unset();
     for input in inputs {
         // Tell cargo to rerun this build script if the proto file has changed.
         // https://doc.rust-lang.org/cargo/reference/build-scripts.html#cargorerun-if-changedpath
         println!("cargo:rerun-if-changed={}", input.as_ref().display());
     }
 
-    let mut prost_config = prost_build::Config::new();
-    if generate_services {
-        prost_config.service_generator(Box::new(OakServiceGenerator));
-    }
     prost_config
         // We require label-related types to be comparable and hashable so that they can be used in
         // hash-based collections.
         .type_attribute(".oak.label", "#[derive(Eq, Hash)]")
         .compile_protos(inputs, includes)
         .expect("could not run prost-build");
+}
+
+// For internal use in Oak.
+#[doc(hidden)]
+pub fn compile_protos_internal<P>(inputs: &[P], includes: &[P])
+where
+    P: AsRef<std::path::Path>,
+{
+    compile_protos_with_internal(&mut prost_build::Config::new(), inputs, includes);
+}
+
+fn set_protoc_env_if_unset() {
+    if std::env::var("PROTOC").is_err() {
+        // Use the system protoc if no override is set, so prost-build does not try to use the
+        // bundled one that we removing as part of the vendoring process.
+        std::env::set_var("PROTOC", "protoc");
+    }
+}
+
+/// Build Rust code corresponding to a set of protocol buffer message and service definitions,
+/// emitting generated code to crate's `OUT_DIR`. This generates code for normal applications
+/// running on the host platform, not the Oak-specific inter-node communication.
+///
+/// This is a drop-in replacement for the `compile` method on `builder`. Clients should prefer to
+/// call this function instead to make sure the `PROTOC` environment variable is set up corectly.
+pub fn tonic_compile<P>(builder: tonic_build::Builder, inputs: &[P], includes: &[P])
+where
+    P: AsRef<std::path::Path>,
+{
+    set_protoc_env_if_unset();
+    builder
+        .compile(inputs, includes)
+        .expect("tonic_compile failed")
 }

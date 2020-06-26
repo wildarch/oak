@@ -55,6 +55,7 @@ dependencies = [
 name = "abitest_grpc"
 version = "0.1.0"
 dependencies = [
+ "oak_utils",
  "prost",
  "tonic",
  "tonic-build",
@@ -68,7 +69,7 @@ dependencies = [
  "aggregator_grpc",
  "assert_matches",
  "env_logger",
- "itertools 0.9.0",
+ "itertools",
  "log",
  "maplit",
  "oak",
@@ -89,6 +90,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "log",
+ "oak_utils",
  "prost",
  "structopt",
  "tokio",
@@ -104,6 +106,7 @@ version = "0.1.0"
 name = "aggregator_grpc"
 version = "0.1.0"
 dependencies = [
+ "oak_utils",
  "prost",
  "tonic",
  "tonic-build",
@@ -191,6 +194,7 @@ dependencies = [
  "futures-util",
  "hyper",
  "log",
+ "oak_utils",
  "open",
  "prost",
  "structopt",
@@ -630,6 +634,7 @@ dependencies = [
 name = "hello_world_grpc"
 version = "0.1.0"
 dependencies = [
+ "oak_utils",
  "prost",
  "tonic",
  "tonic-build",
@@ -766,15 +771,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2b3ea6ff95e175473f8ffe6a7eb7c00d054240321b84c57051175fe3c1e075e"
 dependencies = [
  "libc",
-]
-
-[[package]]
-name = "itertools"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f56a2d0bc861f9165be4eb3442afd3c236d8a98afd426f65d92324ae1091a484"
-dependencies = [
- "either",
 ]
 
 [[package]]
@@ -1100,7 +1096,7 @@ dependencies = [
  "futures-util",
  "http",
  "hyper",
- "itertools 0.9.0",
+ "itertools",
  "jsonwebtoken",
  "lazy_static",
  "log",
@@ -1150,6 +1146,7 @@ dependencies = [
  "prost-build",
  "quote",
  "tempfile",
+ "tonic-build",
  "walkdir",
 ]
 
@@ -1328,6 +1325,7 @@ dependencies = [
 name = "private_set_intersection_grpc"
 version = "0.1.0"
 dependencies = [
+ "oak_utils",
  "prost",
  "tonic",
  "tonic-build",
@@ -1397,8 +1395,6 @@ dependencies = [
 [[package]]
 name = "prost"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce49aefe0a6144a45de32927c77bd2859a5f7677b55f220ae5b744e87389c212"
 dependencies = [
  "bytes",
  "prost-derive",
@@ -1407,12 +1403,10 @@ dependencies = [
 [[package]]
 name = "prost-build"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02b10678c913ecbd69350e8535c3aef91a8676c0773fc1d7b95cdd196d7f2f26"
 dependencies = [
  "bytes",
  "heck",
- "itertools 0.8.2",
+ "itertools",
  "log",
  "multimap",
  "petgraph",
@@ -1425,11 +1419,9 @@ dependencies = [
 [[package]]
 name = "prost-derive"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "537aa19b95acde10a12fec4301466386f757403de4cd4e5b4fa78fb5ecb18f72"
 dependencies = [
  "anyhow",
- "itertools 0.8.2",
+ "itertools",
  "proc-macro2",
  "quote",
  "syn",
@@ -1438,8 +1430,6 @@ dependencies = [
 [[package]]
 name = "prost-types"
 version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1834f67c0697c001304b75be76f67add9c89742eda3a085ad8ee0bb38c3417aa"
 dependencies = [
  "bytes",
  "prost",
@@ -1711,6 +1701,7 @@ dependencies = [
 name = "running_average_grpc"
 version = "0.1.0"
 dependencies = [
+ "oak_utils",
  "prost",
  "tonic",
  "tonic-build",
@@ -2413,6 +2404,7 @@ dependencies = [
 name = "translator_grpc"
 version = "0.1.0"
 dependencies = [
+ "oak_utils",
  "prost",
  "tonic",
  "tonic-build",
@@ -2425,7 +2417,7 @@ dependencies = [
  "anyhow",
  "assert_matches",
  "env_logger",
- "itertools 0.9.0",
+ "itertools",
  "log",
  "maplit",
  "oak",
@@ -2452,6 +2444,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "log",
+ "oak_utils",
  "prost",
  "quick-xml",
  "reqwest",

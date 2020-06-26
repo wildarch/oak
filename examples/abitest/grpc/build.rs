@@ -27,9 +27,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Generate the normal (non-Oak) server and client code for the gRPC service,
     // along with the Rust types corresponding to the message definitions.
-    tonic_build::configure()
-        .build_client(true)
-        .build_server(false)
-        .compile(&[file_path.as_path()], &[proto_path])?;
+    oak_utils::tonic_compile(
+        tonic_build::configure()
+            .build_client(true)
+            .build_server(false),
+        &[file_path.as_path()],
+        &[proto_path],
+    );
     Ok(())
 }

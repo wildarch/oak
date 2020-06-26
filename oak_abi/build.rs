@@ -15,9 +15,7 @@
 //
 
 fn main() {
-    // Exclude generation of service code, as it would require a reference to the Oak SDK to
-    // compile.
-    oak_utils::compile_protos_without_services(
+    oak_utils::compile_protos_internal(
         &[
             "../oak/proto/application.proto",
             "../oak/proto/grpc_encap.proto",

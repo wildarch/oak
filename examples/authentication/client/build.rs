@@ -16,7 +16,7 @@
 
 use std::path::Path;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
     let proto_path = Path::new("../../../oak/proto");
     let file_path = proto_path.join("authentication.proto");
 
@@ -24,9 +24,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // https://doc.rust-lang.org/cargo/reference/build-scripts.html#cargorerun-if-changedpath
     println!("cargo:rerun-if-changed={}", file_path.display());
 
-    tonic_build::configure()
-        .build_client(true)
-        .build_server(false)
-        .compile(&[file_path.as_path()], &[proto_path])?;
-    Ok(())
+    oak_utils::tonic_compile(
+        tonic_build::configure()
+            .build_client(true)
+            .build_server(false),
+        &[file_path.as_path()],
+        &[proto_path],
+    );
 }

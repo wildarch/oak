@@ -11,3 +11,4 @@ tonic = { version = "*", features = ["tls"] }
 
 [build-dependencies]
 tonic-build = "*"
+oak_utils = "*"

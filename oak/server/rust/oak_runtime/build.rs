@@ -26,9 +26,11 @@ fn main() {
 
     // Build `authentication.proto` with `tonic-build` rather than `oak_utils` as it runs directly
     // as a tonic service inside the gRPC server node rather than in a separate Wasm Node.
-    tonic_build::configure()
-        .build_client(false)
-        .build_server(true)
-        .compile(&[file_path.as_path()], &[proto_path])
-        .expect("Proto compilation failed.");
+    oak_utils::tonic_compile(
+        tonic_build::configure()
+            .build_client(false)
+            .build_server(true),
+        &[file_path.as_path()],
+        &[proto_path],
+    );
 }

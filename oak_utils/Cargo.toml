@@ -14,4 +14,9 @@ tempfile = "*"
 quote = "*"
 walkdir = "*"
 prost-build = "*"
+tonic-build = "*"
 proc-macro2 = "*"
+
+[patch.crates-io]
+prost-build = { path = "../third_party/prost/prost-build" }
+prost = { path = "../third_party/prost" }
