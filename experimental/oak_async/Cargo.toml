@@ -1,0 +1,12 @@
+[package]
+name = "oak_async"
+version = "0.1.0"
+authors = ["Daan de Graaf <daagra@google.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures = "0.3"
+oak = "*" 
+oak_abi = "*" 
