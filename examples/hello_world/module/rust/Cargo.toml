@@ -11,8 +11,10 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 log = "*"
 oak = "=0.1.0"
+oak_async = "*"
 prost = "*"
 translator_common = "=0.1.0"
+futures = "*"
 
 [dev-dependencies]
 assert_matches = "*"

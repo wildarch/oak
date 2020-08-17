@@ -1,10 +1,14 @@
 use futures::{
     executor::{LocalPool, LocalSpawner},
     future::RemoteHandle,
+    stream::BoxStream,
     task::LocalSpawnExt,
+    Stream, StreamExt,
 };
+use log::info;
 use oak::{
-    io::{Decodable, Message},
+    grpc::Invocation,
+    io::{Decodable, Message, Receiver},
     ChannelReadStatus, Handle, OakError, OakStatus, ReadHandle,
 };
 use std::{
@@ -23,7 +27,6 @@ std::thread_local! {
 struct ExecutorState {
     // Used to generate unique ids for readers. Incremented every time a new reader is created.
     reader_id: AtomicUsize,
-    // TODO: Derive Hash for `ReadHandle` and use that instead of `Handle`
     // Why not use the Handle as key? Though unlikely in practice, there is nothing stopping a user
     // from having multiple futures reading the same channel, which we cannot support without this
     // indirection.
@@ -153,7 +156,7 @@ impl<T: 'static> Future for JoinHandle<T> {
     }
 }
 
-pub fn block_on<F: Future + 'static>(f: F) -> F::Output
+pub fn block_on<F: Future + 'static>(f: F) -> Result<F::Output, OakStatus>
 where
 {
     let mut pool = LocalPool::new();
@@ -175,7 +178,7 @@ where
 
             // Wait for some handle to have new data
             let (readers, handles) = executor.waiting_readers();
-            let data = wait_on_handles(&handles).expect("wait_on_handles returned error");
+            let data = wait_on_handles(&handles)?;
 
             // Find the handles that had data come in
             let readers_with_data = readers
@@ -193,7 +196,7 @@ where
         // Fetch the return value from the handle, this should return immediately.
         let result = pool.run_until(handle);
         executor.clear_spawner();
-        result
+        Ok(result)
     })
 }
 
@@ -291,5 +294,63 @@ impl<T: Decodable> Drop for ChannelRead<T> {
     fn drop(&mut self) {
         // Make sure the executor doesn't wait for this handle if we drop the future.
         EXECUTOR_STATE.with(|executor| executor.remove_waiting_reader(self.id));
+    }
+}
+
+// TODO(wildarch): Implement a stream type to avoid allocating on the heap.
+pub struct ChannelReadStream<T: Decodable>(BoxStream<'static, Result<T, OakError>>);
+
+impl<T: Decodable> Stream for ChannelReadStream<T> {
+    type Item = Result<T, OakError>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        Stream::poll_next(unsafe { self.map_unchecked_mut(|s| &mut s.0) }, cx)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+pub trait ReceiverAsync {
+    type Message: Decodable;
+    fn receive_async(&self) -> ChannelRead<Self::Message>;
+
+    fn receive_stream(self) -> ChannelReadStream<Self::Message>;
+}
+
+impl<T: Decodable + Send> ReceiverAsync for Receiver<T> {
+    type Message = T;
+
+    fn receive_async(&self) -> ChannelRead<Self::Message> {
+        ChannelRead::new(self.handle.handle)
+    }
+
+    fn receive_stream(self) -> ChannelReadStream<Self::Message> {
+        ChannelReadStream(
+            futures::stream::unfold(self.handle.handle, |handle| async move {
+                let msg = ChannelRead::new(handle).await;
+                if let Err(OakError::OakStatus(OakStatus::ErrChannelClosed)) = msg {
+                    None
+                } else {
+                    Some((msg, handle))
+                }
+            })
+            .boxed(),
+        )
+    }
+}
+
+pub fn run_async_event_loop<F, R>(receiver: Receiver<Invocation>, handler: F)
+where
+    F: FnOnce(ChannelReadStream<Invocation>) -> R,
+    R: Future<Output = ()> + 'static,
+{
+    match block_on(handler(receiver.receive_stream())) {
+        Ok(()) => {}
+        Err(OakStatus::ErrTerminated) => {
+            info!("Received termination status, terminating event loop");
+        }
+        Err(e) => panic!("Event loop received non-termination error: {:?}", e),
     }
 }

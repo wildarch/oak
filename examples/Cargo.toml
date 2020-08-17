@@ -40,6 +40,7 @@ oak_derive = { path = "../sdk/rust/oak_derive" }
 oak_runtime = { path = "../oak/server/rust/oak_runtime" }
 oak_tests = { path = "../sdk/rust/oak_tests" }
 oak_utils = { path = "../oak_utils" }
+oak_async = { path = "../experimental/oak_async" }
 # Examples.
 abitest_grpc = { path = "abitest/grpc" }
 aggregator_grpc = { path = "aggregator/grpc" }
