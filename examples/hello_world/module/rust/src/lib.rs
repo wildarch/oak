@@ -121,12 +121,10 @@ async fn async_handler(invocations: ChannelReadStream<Invocation>) {
             let mut reqs = invocation.request_receiver.receive_stream();
             let req1 = reqs.next().await.unwrap().unwrap();
             match req1.method_name.as_str() {
-                "/oak.examples.hello_world.HelloWorld/SayHello" => {
-                    HelloWorldService::SayHello(
-                        HelloRequest::decode(&req1.req_msg[..]).unwrap(),
-                        OneshotWriter::new(ChannelResponseWriter::new(invocation.response_sender)),
-                    )
-                }
+                "/oak.examples.hello_world.HelloWorld/SayHello" => HelloWorldService::SayHello(
+                    HelloRequest::decode(&req1.req_msg[..]).unwrap(),
+                    OneshotWriter::new(ChannelResponseWriter::new(invocation.response_sender)),
+                ),
                 "/oak.examples.hello_world.HelloWorld/LotsOfReplies" => {
                     HelloWorldService::LotsOfReplies(
                         HelloRequest::decode(&req1.req_msg[..]).unwrap(),
@@ -296,10 +294,13 @@ impl HelloWorld for Node {
     fn bidi_hello(&mut self, reqs: Vec<HelloRequest>, writer: grpc::ChannelResponseWriter) {
         info!("Say hello");
         let msg = recipients(&reqs);
-        let mut res1 = HelloResponse::default();
-        res1.reply = format!("HELLO {}!", msg);
         writer
-            .write(&res1, grpc::WriteMode::KeepOpen)
+            .write(
+                &HelloResponse {
+                    reply: format!("HELLO {}!", msg),
+                },
+                grpc::WriteMode::KeepOpen,
+            )
             .expect("Failed to write response");
         let mut res2 = HelloResponse::default();
         res2.reply = format!("BONJOUR {}!", msg);
