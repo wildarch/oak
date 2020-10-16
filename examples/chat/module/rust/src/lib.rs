@@ -14,39 +14,108 @@
 // limitations under the License.
 //
 
+use futures::{lock::Mutex, prelude::*};
 use log::info;
 use oak::{
     grpc,
     io::{Sender, SenderExt},
 };
 use oak_abi::proto::oak::application::ConfigMap;
+use oak_async::ChannelReadStream;
 use proto::{
+    asynchronous::Chat,
     command::Command::{JoinRoom, SendMessage},
-    Chat, ChatDispatcher, Command, CreateRoomRequest, DestroyRoomRequest, SendMessageRequest,
-    SubscribeRequest,
+    Command,
 };
-use std::collections::{hash_map::Entry, HashMap};
+use std::{
+    collections::{hash_map::Entry, HashMap},
+    sync::Arc,
+};
 
 mod backend;
 mod proto {
     include!(concat!(env!("OUT_DIR"), "/oak.examples.chat.rs"));
 }
 
-type RoomId = Vec<u8>;
 type AdminToken = Vec<u8>;
-
-#[derive(Default)]
-struct Node {
-    rooms: HashMap<RoomId, Room>,
-}
 
 oak::entrypoint!(grpc_oak_main<ConfigMap> => |_receiver| {
     oak::logger::init_default();
-    let dispatcher = ChatDispatcher::new(Node::default());
     let grpc_channel =
         oak::grpc::server::init("[::]:8080").expect("could not create gRPC server pseudo-Node");
-    oak::run_command_loop(dispatcher, grpc_channel);
+    oak_async::run_command_loop(grpc_channel, async_handler);
 });
+
+async fn async_handler(invocations: ChannelReadStream<oak::grpc::Invocation>) {
+    let rooms = Arc::new(Mutex::new(HashMap::new()));
+
+    invocations
+        .and_then(Chat::from_invocation)
+        .try_for_each(|command| async {
+            let rooms = rooms.clone();
+            let mut rooms = rooms.lock().await;
+            match command {
+                Chat::CreateRoom(req, res) => {
+                    info!("creating room");
+                    if rooms.contains_key(&req.room_id) {
+                        res.close_error(oak::grpc::Code::AlreadyExists, "room already exists")?;
+                        return Ok(());
+                    }
+
+                    // Create a new Node for this room, and keep the write handle and admin token in
+                    // the `rooms` map.
+                    rooms.insert(req.room_id, Room::new(req.admin_token));
+                    res.send(&())
+                }
+                Chat::DestroyRoom(req, res) => {
+                    info!("destroying room");
+                    match rooms.entry(req.room_id) {
+                        Entry::Occupied(e) => {
+                            if e.get().admin_token == req.admin_token {
+                                // Close the only input channel that reaches the per-room Node,
+                                // which will trigger it to terminate.
+                                e.get().sender.close().expect("could not close channel");
+                                e.remove();
+                                res.send(&())
+                            } else {
+                                res.close_error(grpc::Code::PermissionDenied, "invalid admin token")
+                            }
+                        }
+                        Entry::Vacant(_) => res.close_error(grpc::Code::NotFound, "room not found"),
+                    }
+                }
+                Chat::Subscribe(req, res) => {
+                    info!("subscribing to room");
+                    match rooms.get(&req.room_id) {
+                        None => res.close_error(grpc::Code::NotFound, "room not found"),
+                        Some(room) => {
+                            info!("new subscription to room {:?}", req.room_id);
+                            let command = Command {
+                                command: Some(JoinRoom(Sender::new(res.into_inner().handle()))),
+                            };
+                            room.sender.send(&command)
+                        }
+                    }
+                }
+                Chat::SendMessage(req, res) => {
+                    info!("sending message to room");
+                    match rooms.get(&req.room_id) {
+                        None => res.close_error(grpc::Code::NotFound, "room not found"),
+                        Some(room) => {
+                            info!("new message to room {:?}", req.room_id);
+                            let command = Command {
+                                command: req.message.map(SendMessage),
+                            };
+                            room.sender.send(&command)?;
+                            res.send(&())
+                        }
+                    }
+                }
+            }
+        })
+        .await
+        .expect("Error handling request");
+}
 
 struct Room {
     sender: oak::io::Sender<Command>,
@@ -62,90 +131,6 @@ impl Room {
         Room {
             sender: oak::io::Sender::new(wh),
             admin_token,
-        }
-    }
-}
-
-fn room_id_not_found_err<T>() -> grpc::Result<T> {
-    Err(grpc::build_status(grpc::Code::NotFound, "room not found"))
-}
-
-fn room_id_duplicate_err<T>() -> grpc::Result<T> {
-    Err(grpc::build_status(
-        grpc::Code::AlreadyExists,
-        "room already exists",
-    ))
-}
-
-impl Chat for Node {
-    fn create_room(&mut self, req: CreateRoomRequest) -> grpc::Result<()> {
-        info!("creating room");
-        if self.rooms.contains_key(&req.room_id) {
-            return room_id_duplicate_err();
-        }
-
-        // Create a new Node for this room, and keep the write handle and admin token in the `rooms`
-        // map.
-        self.rooms.insert(req.room_id, Room::new(req.admin_token));
-
-        Ok(())
-    }
-
-    fn destroy_room(&mut self, req: DestroyRoomRequest) -> grpc::Result<()> {
-        info!("destroying room");
-        match self.rooms.entry(req.room_id) {
-            Entry::Occupied(e) => {
-                if e.get().admin_token == req.admin_token {
-                    // Close the only input channel that reaches the per-room Node, which
-                    // will trigger it to terminate.
-                    e.get().sender.close().expect("could not close channel");
-                    e.remove();
-                    Ok(())
-                } else {
-                    Err(grpc::build_status(
-                        grpc::Code::PermissionDenied,
-                        "invalid admin token",
-                    ))
-                }
-            }
-            Entry::Vacant(_) => room_id_not_found_err(),
-        }
-    }
-
-    fn subscribe(&mut self, req: SubscribeRequest, writer: grpc::ChannelResponseWriter) {
-        info!("subscribing to room");
-        match self.rooms.get(&req.room_id) {
-            None => {
-                writer
-                    .close(room_id_not_found_err())
-                    .expect("could not close channel");
-            }
-            Some(room) => {
-                info!("new subscription to room {:?}", req.room_id);
-                let command = Command {
-                    command: Some(JoinRoom(Sender::new(writer.handle()))),
-                };
-                room.sender
-                    .send(&command)
-                    .expect("could not send command to room Node");
-            }
-        };
-    }
-
-    fn send_message(&mut self, req: SendMessageRequest) -> grpc::Result<()> {
-        info!("sending message to room");
-        match self.rooms.get(&req.room_id) {
-            None => room_id_not_found_err(),
-            Some(room) => {
-                info!("new message to room {:?}", req.room_id);
-                let command = Command {
-                    command: req.message.map(SendMessage),
-                };
-                room.sender
-                    .send(&command)
-                    .expect("could not send command to room Node");
-                Ok(())
-            }
         }
     }
 }

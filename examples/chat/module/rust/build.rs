@@ -15,8 +15,12 @@
 //
 
 fn main() {
-    oak_utils::compile_protos(
+    oak_utils::compile_protos_with_options(
         &["../../proto/chat.proto", "../../proto/chat_internal.proto"],
         &["../../proto", "../../../../"],
+        oak_utils::ProtoOptions {
+            experimental_async: true,
+            ..Default::default()
+        },
     );
 }

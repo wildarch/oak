@@ -18,13 +18,29 @@ use crate::proto::{
     command::Command::{JoinRoom, SendMessage},
     Command, Message,
 };
+use futures::prelude::*;
 use log::{info, warn};
 use oak::CommandHandler;
+use oak_async::ChannelReadStream;
 
-oak::entrypoint!(backend_oak_main<Command> => |receiver| {
+oak::entrypoint!(backend_oak_main<Command> => |in_channel| {
     oak::logger::init_default();
-    oak::run_command_loop(Room::default(), receiver);
+    oak_async::run_command_loop(in_channel, async_handler);
 });
+
+async fn async_handler(commands: ChannelReadStream<Command>) {
+    commands
+        .fold(Room::default(), |mut room, command| async {
+            if let Err(e) = command
+                .map_err(|e| anyhow::Error::new(e))
+                .and_then(|command| room.handle_command(command))
+            {
+                warn!("Failed to handle command: {}", e);
+            }
+            room
+        })
+        .await;
+}
 
 #[derive(Default)]
 struct Room {

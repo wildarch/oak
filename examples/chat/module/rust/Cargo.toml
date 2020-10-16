@@ -20,6 +20,8 @@ prost = "*"
 rand_core = "*"
 rand = "*"
 serde = { version = "*", features = ["derive"] }
+oak_async = "*"
+futures = "*"
 
 [dev-dependencies]
 assert_matches = "*"
