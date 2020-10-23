@@ -1,4 +1,7 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `rust/oak/src/io/receiver.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>receiver.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css"><link rel="stylesheet" type="text/css" href="../../../light.css" id="themeStyle"><script src="../../../storage.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="shortcut icon" href="../../../favicon.ico"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../../oak/index.html'><div class='logo-container'><img src='../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1"> 1</span>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source to the Rust file `rust/oak/src/io/receiver.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>receiver.rs.html -- source</title><link rel="stylesheet" type="text/css" href="../../../normalize.css"><link rel="stylesheet" type="text/css" href="../../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../../ayu.css" disabled ><script src="../../../storage.js"></script><noscript><link rel="stylesheet" href="../../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../../../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../../down-arrow.svg");}</style></head><body class="rustdoc source"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><a href='../../../oak/index.html'><div class='logo-container rust-logo'><img src='../../../rust-logo.png' alt='logo'></div></a></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><span class="help-button">?</span>
+                <a id="settings-menu" href="../../../settings.html"><img src="../../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><pre class="line-numbers"><span id="1"> 1</span>
 <span id="2"> 2</span>
 <span id="3"> 3</span>
 <span id="4"> 4</span>
@@ -96,6 +99,7 @@
 <span id="96">96</span>
 <span id="97">97</span>
 <span id="98">98</span>
+<span id="99">99</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">//</span>
 <span class="comment">// Copyright 2020 The Project Oak Authors</span>
@@ -115,22 +119,25 @@
 
 <span class="kw">use</span> <span class="kw">crate</span>::{
     <span class="ident">io</span>::{<span class="ident">Decodable</span>, <span class="ident">Receiver</span>},
-    <span class="ident">ChannelReadStatus</span>, <span class="ident">OakError</span>, <span class="ident">OakStatus</span>,
+    <span class="ident">ChannelReadStatus</span>, <span class="ident">Label</span>, <span class="ident">OakError</span>, <span class="ident">OakStatus</span>,
 };
 <span class="kw">use</span> <span class="ident">log</span>::<span class="ident">error</span>;
 
 <span class="doccomment">/// SDK-specific functionality provided by a receiver.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">ReceiverExt</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Close the underlying channel used by the receiver.</span>
+    <span class="doccomment">/// Closes the underlying channel used by the receiver.</span>
     <span class="kw">fn</span> <span class="ident">close</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">OakStatus</span><span class="op">&gt;</span>;
 
-    <span class="doccomment">/// Attempt to wait for a value on the receiver, blocking if necessary.</span>
+    <span class="doccomment">/// Attempts to wait for a value on the receiver, blocking if necessary.</span>
     <span class="kw">fn</span> <span class="ident">receive</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">OakError</span><span class="op">&gt;</span>;
 
-    <span class="doccomment">/// Attempt to read a value from the receiver, without blocking.</span>
+    <span class="doccomment">/// Attempts to read a value from the receiver, without blocking.</span>
     <span class="kw">fn</span> <span class="ident">try_receive</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">OakError</span><span class="op">&gt;</span>;
 
-    <span class="doccomment">/// Wait for a value to be available from the receiver.</span>
+    <span class="doccomment">/// Retrieves the label associated with the underlying channel.</span>
+    <span class="kw">fn</span> <span class="ident">label</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Label</span>, <span class="ident">OakError</span><span class="op">&gt;</span>;
+
+    <span class="doccomment">/// Waits for a value to be available from the receiver.</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// Returns [`ChannelReadStatus`] of the wrapped handle, or `Err(OakStatus::ErrTerminated)` if</span>
     <span class="doccomment">/// the Oak Runtime is terminating.</span>
@@ -138,18 +145,15 @@
 }
 
 <span class="kw">impl</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="ident">Decodable</span><span class="op">&gt;</span> <span class="ident">ReceiverExt</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
-    <span class="doccomment">/// Close the underlying channel used by the receiver.</span>
     <span class="kw">fn</span> <span class="ident">close</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">OakStatus</span><span class="op">&gt;</span> {
         <span class="kw">crate</span>::<span class="ident">channel_close</span>(<span class="self">self</span>.<span class="ident">handle</span>.<span class="ident">handle</span>)
     }
 
-    <span class="doccomment">/// Attempt to wait for a value on the receiver, blocking if necessary.</span>
     <span class="kw">fn</span> <span class="ident">receive</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">OakError</span><span class="op">&gt;</span> {
         <span class="self">self</span>.<span class="ident">wait</span>()<span class="question-mark">?</span>;
         <span class="self">self</span>.<span class="ident">try_receive</span>()
     }
 
-    <span class="doccomment">/// Attempt to read a value from the receiver, without blocking.</span>
     <span class="kw">fn</span> <span class="ident">try_receive</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">OakError</span><span class="op">&gt;</span> {
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">bytes</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="number">1024</span>);
         <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">handles</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">with_capacity</span>(<span class="number">16</span>);
@@ -159,10 +163,11 @@
         <span class="ident">T</span>::<span class="ident">decode</span>(<span class="kw-2">&amp;</span><span class="ident">message</span>)
     }
 
-    <span class="doccomment">/// Wait for a value to be available from the receiver.</span>
-    <span class="doccomment">///</span>
-    <span class="doccomment">/// Returns [`ChannelReadStatus`] of the wrapped handle, or `Err(OakStatus::ErrTerminated)` if</span>
-    <span class="doccomment">/// the Oak Runtime is terminating.</span>
+    <span class="kw">fn</span> <span class="ident">label</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Label</span>, <span class="ident">OakError</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">label</span> <span class="op">=</span> <span class="kw">crate</span>::<span class="ident">channel_label_read</span>(<span class="self">self</span>.<span class="ident">handle</span>.<span class="ident">handle</span>)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="ident">label</span>)
+    }
+
     <span class="kw">fn</span> <span class="ident">wait</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">ChannelReadStatus</span>, <span class="ident">OakStatus</span><span class="op">&gt;</span> {
         <span class="comment">// TODO(#500): Consider creating the handle notification space once and for all in `new`.</span>
         <span class="kw">let</span> <span class="ident">read_handles</span> <span class="op">=</span> <span class="macro">vec</span><span class="macro">!</span>[<span class="self">self</span>.<span class="ident">handle</span>];
