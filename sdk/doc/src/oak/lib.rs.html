@@ -579,39 +579,6 @@
 <span id="576">576</span>
 <span id="577">577</span>
 <span id="578">578</span>
-<span id="579">579</span>
-<span id="580">580</span>
-<span id="581">581</span>
-<span id="582">582</span>
-<span id="583">583</span>
-<span id="584">584</span>
-<span id="585">585</span>
-<span id="586">586</span>
-<span id="587">587</span>
-<span id="588">588</span>
-<span id="589">589</span>
-<span id="590">590</span>
-<span id="591">591</span>
-<span id="592">592</span>
-<span id="593">593</span>
-<span id="594">594</span>
-<span id="595">595</span>
-<span id="596">596</span>
-<span id="597">597</span>
-<span id="598">598</span>
-<span id="599">599</span>
-<span id="600">600</span>
-<span id="601">601</span>
-<span id="602">602</span>
-<span id="603">603</span>
-<span id="604">604</span>
-<span id="605">605</span>
-<span id="606">606</span>
-<span id="607">607</span>
-<span id="608">608</span>
-<span id="609">609</span>
-<span id="610">610</span>
-<span id="611">611</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">//</span>
 <span class="comment">// Copyright 2018 The Project Oak Authors</span>
@@ -633,8 +600,7 @@
 <span class="doccomment">//! underlying Oak platform functionality.</span>
 
 <span class="kw">use</span> <span class="ident">byteorder</span>::<span class="ident">WriteBytesExt</span>;
-<span class="kw">use</span> <span class="ident">io</span>::<span class="ident">ReceiverExt</span>;
-<span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">debug</span>, <span class="ident">error</span>, <span class="ident">info</span>, <span class="ident">trace</span>, <span class="ident">warn</span>};
+<span class="kw">use</span> <span class="ident">log</span>::{<span class="ident">debug</span>, <span class="ident">error</span>, <span class="ident">warn</span>};
 <span class="kw">use</span> <span class="ident">oak_abi</span>::<span class="ident">proto</span>::<span class="ident">oak</span>::<span class="ident">application</span>::<span class="ident">NodeConfiguration</span>;
 <span class="kw">use</span> <span class="ident">prost</span>::<span class="ident">Message</span>;
 
@@ -839,12 +805,6 @@
     <span class="ident">result_from_status</span>(<span class="ident">status</span> <span class="kw">as</span> <span class="ident">i32</span>, ())
 }
 
-<span class="doccomment">/// Similar to [`channel_create_with_label`], but with a fixed label corresponding to &quot;public</span>
-<span class="doccomment">/// untrusted&quot;.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channel_create</span>() <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">WriteHandle</span>, <span class="ident">ReadHandle</span>), <span class="ident">OakStatus</span><span class="op">&gt;</span> {
-    <span class="ident">channel_create_with_label</span>(<span class="kw-2">&amp;</span><span class="ident">Label</span>::<span class="ident">public_untrusted</span>())
-}
-
 <span class="doccomment">/// Create a new unidirectional channel.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// The provided label must be equal or more restrictive than the label of the calling node, i.e.</span>
@@ -852,7 +812,7 @@
 <span class="doccomment">///</span>
 <span class="doccomment">/// On success, returns [`WriteHandle`] and a [`ReadHandle`] values for the</span>
 <span class="doccomment">/// write and read halves (respectively).</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channel_create_with_label</span>(<span class="ident">label</span>: <span class="kw-2">&amp;</span><span class="ident">Label</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">WriteHandle</span>, <span class="ident">ReadHandle</span>), <span class="ident">OakStatus</span><span class="op">&gt;</span> {
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">channel_create</span>(<span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>, <span class="ident">label</span>: <span class="kw-2">&amp;</span><span class="ident">Label</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(<span class="ident">WriteHandle</span>, <span class="ident">ReadHandle</span>), <span class="ident">OakStatus</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">write</span> <span class="op">=</span> <span class="ident">WriteHandle</span> {
         <span class="ident">handle</span>: <span class="kw">crate</span>::<span class="ident">handle</span>::<span class="ident">invalid</span>(),
     };
@@ -860,10 +820,13 @@
         <span class="ident">handle</span>: <span class="kw">crate</span>::<span class="ident">handle</span>::<span class="ident">invalid</span>(),
     };
     <span class="kw">let</span> <span class="ident">label_bytes</span> <span class="op">=</span> <span class="ident">label</span>.<span class="ident">serialize</span>();
+    <span class="kw">let</span> <span class="ident">name_bytes</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">as_bytes</span>();
     <span class="kw">let</span> <span class="ident">status</span> <span class="op">=</span> <span class="kw">unsafe</span> {
         <span class="ident">oak_abi</span>::<span class="ident">channel_create</span>(
             <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">write</span>.<span class="ident">handle</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">u64</span>,
             <span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">read</span>.<span class="ident">handle</span> <span class="kw">as</span> <span class="kw-2">*</span><span class="kw-2">mut</span> <span class="ident">u64</span>,
+            <span class="ident">name_bytes</span>.<span class="ident">as_ptr</span>(),
+            <span class="ident">name_bytes</span>.<span class="ident">len</span>(),
             <span class="ident">label_bytes</span>.<span class="ident">as_ptr</span>(),
             <span class="ident">label_bytes</span>.<span class="ident">len</span>(),
         )
@@ -877,12 +840,6 @@
     <span class="ident">result_from_status</span>(<span class="ident">status</span> <span class="kw">as</span> <span class="ident">i32</span>, ())
 }
 
-<span class="doccomment">/// Similar to [`node_create_with_label`], but with a fixed label corresponding to &quot;public</span>
-<span class="doccomment">/// untrusted&quot;.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_create</span>(<span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident">NodeConfiguration</span>, <span class="ident">half</span>: <span class="ident">ReadHandle</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">OakStatus</span><span class="op">&gt;</span> {
-    <span class="ident">node_create_with_label</span>(<span class="ident">config</span>, <span class="kw-2">&amp;</span><span class="ident">Label</span>::<span class="ident">public_untrusted</span>(), <span class="ident">half</span>)
-}
-
 <span class="doccomment">/// Creates a new Node running the configuration identified by `config_name`, running the entrypoint</span>
 <span class="doccomment">/// identified by `entrypoint_name` (for a Web Assembly Node; this parameter is ignored when</span>
 <span class="doccomment">/// creating a pseudo-Node), with the provided `label`, and passing it the given handle.</span>
@@ -891,11 +848,13 @@
 <span class="doccomment">/// the label of the calling node must &quot;flow to&quot; the provided label.</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// See https://github.com/project-oak/oak/blob/main/docs/concepts.md#labels</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_create_with_label</span>(
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">node_create</span>(
+    <span class="ident">name</span>: <span class="kw-2">&amp;</span><span class="ident">str</span>,
     <span class="ident">config</span>: <span class="kw-2">&amp;</span><span class="ident">NodeConfiguration</span>,
     <span class="ident">label</span>: <span class="kw-2">&amp;</span><span class="ident">Label</span>,
     <span class="ident">half</span>: <span class="ident">ReadHandle</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span>(), <span class="ident">OakStatus</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">name_bytes</span> <span class="op">=</span> <span class="ident">name</span>.<span class="ident">as_bytes</span>();
     <span class="kw">let</span> <span class="ident">label_bytes</span> <span class="op">=</span> <span class="ident">label</span>.<span class="ident">serialize</span>();
     <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">config_bytes</span> <span class="op">=</span> <span class="ident">Vec</span>::<span class="ident">new</span>();
     <span class="ident">config</span>.<span class="ident">encode</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="ident">config_bytes</span>).<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> {
@@ -904,6 +863,8 @@
     })<span class="question-mark">?</span>;
     <span class="kw">let</span> <span class="ident">status</span> <span class="op">=</span> <span class="kw">unsafe</span> {
         <span class="ident">oak_abi</span>::<span class="ident">node_create</span>(
+            <span class="ident">name_bytes</span>.<span class="ident">as_ptr</span>(),
+            <span class="ident">name_bytes</span>.<span class="ident">len</span>(),
             <span class="ident">config_bytes</span>.<span class="ident">as_ptr</span>(),
             <span class="ident">config_bytes</span>.<span class="ident">len</span>(),
             <span class="ident">label_bytes</span>.<span class="ident">as_ptr</span>(),
@@ -1038,92 +999,31 @@
 
 <span class="doccomment">/// Trait implemented by Oak Nodes (or parts thereof) that operate on commands.</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// It has a single method for handling commands, which are [`Decodable`](crate::io::Decodable)</span>
-<span class="doccomment">/// objects that are received via the single incoming channel handle which is passed in at Node</span>
-<span class="doccomment">/// creation time. The return value is only used for logging in case of error.</span>
-<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">CommandHandler</span><span class="op">&lt;</span><span class="ident">T</span>: <span class="kw">crate</span>::<span class="ident">io</span>::<span class="ident">Decodable</span><span class="op">&gt;</span> {
+<span class="doccomment">/// It has a single method for handling commands, which are usually received via the single incoming</span>
+<span class="doccomment">/// channel handle which is passed in at Node creation time, or derived from such stream.</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">CommandHandler</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span> {
+    <span class="doccomment">/// Handles a single command instance.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// The return value is only used for logging in case of error.</span>
     <span class="kw">fn</span> <span class="ident">handle_command</span>(<span class="kw-2">&amp;</span><span class="kw-2">mut</span> <span class="self">self</span>, <span class="ident">command</span>: <span class="ident">T</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">anyhow</span>::<span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>;
 }
 
-<span class="doccomment">/// Run a command loop on the provided [`CommandHandler`]:</span>
+<span class="doccomment">/// Runs a command loop on the provided [`CommandHandler`]:</span>
 <span class="doccomment">///</span>
-<span class="doccomment">/// - wait for new messages on the provided channel `in_channel`</span>
-<span class="doccomment">/// - if the runtime signals that the Node was terminated while waiting, then exit the event loop</span>
-<span class="doccomment">/// - otherwise, read the available message via the provided channel handle</span>
-<span class="doccomment">/// - decode the message from (bytes + handles) to the specified command type `T`</span>
-<span class="doccomment">/// - pass the typed command object to the `Node::handle_command` method of the `node`, which</span>
+<span class="doccomment">/// - waits for new messages from the provided iterator</span>
+<span class="doccomment">/// - passes the typed command object to the `Node::handle_command` method of the `node`, which</span>
 <span class="doccomment">///   executes a single iteration of the loop</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// Note the loop is only interrupted if the Node is terminated while waiting. Other errors are just</span>
 <span class="doccomment">/// logged, and the loop continues with the next iteration.</span>
-<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run_command_loop</span><span class="op">&lt;</span>
-    <span class="ident">T</span>: <span class="kw">crate</span>::<span class="ident">io</span>::<span class="ident">Decodable</span>,
-    <span class="ident">N</span>: <span class="ident">CommandHandler</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>,
-    <span class="ident">R</span>: <span class="ident">Into</span><span class="op">&lt;</span><span class="kw">crate</span>::<span class="ident">io</span>::<span class="ident">Receiver</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>,
-<span class="op">&gt;</span>(
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">run_command_loop</span><span class="op">&lt;</span><span class="ident">T</span>, <span class="ident">N</span>: <span class="ident">CommandHandler</span><span class="op">&lt;</span><span class="ident">T</span><span class="op">&gt;</span>, <span class="ident">R</span>: <span class="ident">Iterator</span><span class="op">&lt;</span><span class="ident">Item</span> <span class="op">=</span> <span class="ident">T</span><span class="op">&gt;</span><span class="op">&gt;</span>(
     <span class="kw-2">mut</span> <span class="ident">command_handler</span>: <span class="ident">N</span>,
-    <span class="ident">receiver</span>: <span class="ident">R</span>,
+    <span class="ident">command_iterator</span>: <span class="ident">R</span>,
 ) {
-    <span class="kw">let</span> <span class="ident">receiver</span> <span class="op">=</span> <span class="ident">receiver</span>.<span class="ident">into</span>();
-    <span class="kw">if</span> <span class="op">!</span><span class="kw">crate</span>::<span class="ident">handle</span>::<span class="ident">is_valid</span>(<span class="ident">receiver</span>.<span class="ident">handle</span>.<span class="ident">handle</span>) {
-        <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;{:?}: invalid input handle&quot;</span>, <span class="ident">receiver</span>);
-        <span class="kw">return</span>;
-    }
-    <span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;{:?}: starting command loop&quot;</span>, <span class="ident">receiver</span>);
-    <span class="kw">loop</span> {
-        <span class="comment">// First wait until a message is available. If the Node was terminated while waiting, this</span>
-        <span class="comment">// will return `ErrTerminated`, which indicates that the event loop should be terminated.</span>
-        <span class="comment">// For any other error raised while waiting is logged, we try and determine whether it is</span>
-        <span class="comment">// transient or not, and then continue or terminate the event loop, respectively.</span>
-        <span class="kw">match</span> <span class="ident">receiver</span>.<span class="ident">wait</span>() {
-            <span class="prelude-val">Err</span>(<span class="ident">status</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">OakStatus</span>::<span class="kw-2">*</span>;
-                <span class="kw">match</span> <span class="ident">status</span> {
-                    <span class="ident">ErrTerminated</span> <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="macro">info</span><span class="macro">!</span>(
-                            <span class="string">&quot;{:?}: received termination status: {:?}; terminating event loop&quot;</span>,
-                            <span class="ident">receiver</span>, <span class="ident">status</span>
-                        );
-                        <span class="kw">return</span>;
-                    }
-                    <span class="kw">_</span> <span class="op">=</span><span class="op">&gt;</span> {
-                        <span class="macro">error</span><span class="macro">!</span>(
-                            <span class="string">&quot;{:?}: received status: {:?}; but `Receiver::wait` never returns an error other than `ErrTerminated`&quot;</span>,
-                            <span class="ident">receiver</span>, <span class="ident">status</span>
-                        );
-                        <span class="kw">return</span>;
-                    }
-                }
-            }
-            <span class="prelude-val">Ok</span>(<span class="ident">status</span>) <span class="op">=</span><span class="op">&gt;</span> <span class="kw">match</span> <span class="ident">status</span> {
-                <span class="ident">ChannelReadStatus</span>::<span class="ident">ReadReady</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro">trace</span><span class="macro">!</span>(<span class="string">&quot;{:?}: wait over&quot;</span>, <span class="ident">receiver</span>),
-                <span class="ident">ChannelReadStatus</span>::<span class="ident">Orphaned</span>
-                <span class="op">|</span> <span class="ident">ChannelReadStatus</span>::<span class="ident">PermissionDenied</span>
-                <span class="op">|</span> <span class="ident">ChannelReadStatus</span>::<span class="ident">InvalidChannel</span> <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="macro">warn</span><span class="macro">!</span>(
-                        <span class="string">&quot;{:?}: received invalid channel read status: {:?}; terminating event loop&quot;</span>,
-                        <span class="ident">receiver</span>, <span class="ident">status</span>
-                    );
-                    <span class="kw">return</span>;
-                }
-                <span class="ident">ChannelReadStatus</span>::<span class="ident">NotReady</span> <span class="op">=</span><span class="op">&gt;</span> {
-                    <span class="macro">error</span><span class="macro">!</span>(
-                        <span class="string">&quot;{:?}: received `ChannelReadStatus::NotReady`, which should never be returned from `Receiver::wait`.&quot;</span>,
-                        <span class="ident">receiver</span>);
-                    <span class="kw">return</span>;
-                }
-            },
-        }
-        <span class="kw">match</span> <span class="ident">receiver</span>.<span class="ident">try_receive</span>() {
-            <span class="prelude-val">Ok</span>(<span class="ident">command</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="macro">info</span><span class="macro">!</span>(<span class="string">&quot;{:?}: received command&quot;</span>, <span class="ident">receiver</span>);
-                <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span> <span class="ident">command_handler</span>.<span class="ident">handle_command</span>(<span class="ident">command</span>) {
-                    <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;{:?}: error handling command: {}&quot;</span>, <span class="ident">receiver</span>, <span class="ident">err</span>);
-                }
-            }
-            <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span><span class="op">&gt;</span> {
-                <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;{:?}: error receiving command: {}&quot;</span>, <span class="ident">receiver</span>, <span class="ident">err</span>);
-            }
+    <span class="kw">for</span> <span class="ident">command</span> <span class="kw">in</span> <span class="ident">command_iterator</span> {
+        <span class="macro">debug</span><span class="macro">!</span>(<span class="string">&quot;received command&quot;</span>);
+        <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Err</span>(<span class="ident">err</span>) <span class="op">=</span> <span class="ident">command_handler</span>.<span class="ident">handle_command</span>(<span class="ident">command</span>) {
+            <span class="macro">error</span><span class="macro">!</span>(<span class="string">&quot;error handling command: {}&quot;</span>, <span class="ident">err</span>);
         }
     }
 }
@@ -1163,7 +1063,7 @@
 <span class="doccomment">///     let grpc_channel = oak::grpc::server::init(&amp;grpc_server_listen_address)</span>
 <span class="doccomment">///         .expect(&quot;could not create gRPC server pseudo-node&quot;);</span>
 <span class="doccomment">///     let dispatcher = DummyNode::default();</span>
-<span class="doccomment">///     oak::run_command_loop(dispatcher, grpc_channel);</span>
+<span class="doccomment">///     oak::run_command_loop(dispatcher, grpc_channel.iter());</span>
 <span class="doccomment">/// });</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # fn main() {}</span>
@@ -1177,6 +1077,7 @@
 <span class="doccomment">/// expression too:</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// ```</span>
+<span class="doccomment">/// use oak::io::ReceiverExt;</span>
 <span class="doccomment">/// use oak_abi::proto::oak::application::ConfigMap;</span>
 <span class="doccomment">///</span>
 <span class="doccomment">/// # fn init_all_the_things() {}</span>
@@ -1195,7 +1096,7 @@
 <span class="doccomment">///     let dispatcher = DummyNode::default();</span>
 <span class="doccomment">///     let grpc_channel = oak::grpc::server::init(&quot;[::]:8080&quot;)</span>
 <span class="doccomment">///         .expect(&quot;could not create gRPC server pseudo-node&quot;);</span>
-<span class="doccomment">///     oak::run_command_loop(dispatcher, grpc_channel);</span>
+<span class="doccomment">///     oak::run_command_loop(dispatcher, grpc_channel.iter());</span>
 <span class="doccomment">/// });</span>
 <span class="doccomment">/// #</span>
 <span class="doccomment">/// # fn main() {}</span>
@@ -1222,6 +1123,39 @@
                 <span class="macro-nonterminal">$</span><span class="macro-nonterminal">handler</span>(<span class="ident">receiver</span>);
             });
         }
+    };
+}
+
+<span class="doccomment">/// Similar to [`entrypoint`], but offers a less verbose API in case in which the handler is a</span>
+<span class="doccomment">/// [`CommandHandler`] instance. In this case, the type of incoming messages is inferred from the</span>
+<span class="doccomment">/// generic type associated with the handler instance, and only the entrypoint name needs to be</span>
+<span class="doccomment">/// specified.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// The generated implementation of the body of this node sets up logging, and then immediately</span>
+<span class="doccomment">/// calls [`run_command_loop`] on the provided handler.</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// use oak_abi::proto::oak::application::ConfigMap;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// struct Main;</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// impl oak::CommandHandler&lt;ConfigMap&gt; for Main {</span>
+<span class="doccomment">///     fn handle_command(&amp;mut self, command: ConfigMap) -&gt; anyhow::Result&lt;()&gt; {</span>
+<span class="doccomment">///         // ...</span>
+<span class="doccomment">/// #        unimplemented!()</span>
+<span class="doccomment">///     }</span>
+<span class="doccomment">/// }</span>
+<span class="doccomment">///</span>
+<span class="doccomment">/// oak::entrypoint_command_handler!(oak_main =&gt; Main);</span>
+<span class="doccomment">/// ```</span>
+<span class="attribute">#[<span class="ident">macro_export</span>]</span>
+<span class="macro">macro_rules</span><span class="macro">!</span> <span class="ident">entrypoint_command_handler</span> {
+    (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span> <span class="op">=</span><span class="op">&gt;</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">handler</span>:<span class="ident">expr</span>) <span class="op">=</span><span class="op">&gt;</span> {
+        ::<span class="ident">oak</span>::<span class="macro">entrypoint</span><span class="macro">!</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span> <span class="op">&lt;</span> <span class="kw">_</span> <span class="op">&gt;</span> <span class="op">=</span><span class="op">&gt;</span> <span class="op">|</span><span class="ident">receiver</span>: ::<span class="ident">oak</span>::<span class="ident">io</span>::<span class="ident">Receiver</span><span class="op">&lt;</span><span class="kw">_</span><span class="op">&gt;</span><span class="op">|</span> {
+            <span class="kw">use</span> ::<span class="ident">oak</span>::<span class="ident">io</span>::<span class="ident">ReceiverExt</span>;
+            <span class="ident">oak</span>::<span class="ident">logger</span>::<span class="ident">init_default</span>();
+            <span class="ident">oak</span>::<span class="ident">run_command_loop</span>(<span class="macro-nonterminal">$</span><span class="macro-nonterminal">handler</span>, <span class="ident">receiver</span>.<span class="ident">iter</span>());
+        });
     };
 }
 </pre></div>
