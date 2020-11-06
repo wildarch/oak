@@ -44,11 +44,14 @@ impl oak::CommandHandler for Main {
             &Label::public_untrusted(),
             &oak::node_config::wasm("translator", "handler"),
         );
+        /*
         let handler_init_sender = oak::io::node_create::<InitWrapper<Init, grpc::Invocation>>(
             "handler",
             &Label::public_untrusted(),
             &oak::node_config::wasm("app", "async_node"),
         )?;
+        */
+        let handler_init_sender = async_node::start(&Label::public_untrusted())?;
         let handler_command_sender = oak::io::send_init(
             handler_init_sender,
             translator_sender_result
@@ -77,21 +80,21 @@ impl Translator {
 // `Either<(), T>`, which is isomorphic to it.
 type Init = Either<(), Sender<grpc::Invocation>>;
 
-oak::entrypoint!(async_node <InitWrapper<Init, grpc::Invocation>> => async_node_entrypoint);
-fn async_node_entrypoint(receiver: Receiver<InitWrapper<Init, grpc::Invocation>>) {
+#[oak_derive::entrypoint]
+fn async_node(receiver: Receiver<InitWrapper<Init, grpc::Invocation>>) {
     let InitWrapper {
         init,
         command_receiver,
     } = receiver.receive().expect("Did not receive init message");
-    let translator = Translator {
-        client: init.right().map(translator_common::TranslatorClient),
-    };
     oak_async::run_command_loop(command_receiver, |invocations| {
-        hello_handler(translator, invocations)
+        hello_handler(init, invocations)
     });
 }
 
-async fn hello_handler(translator: Translator, invocations: ChannelReadStream<grpc::Invocation>) {
+async fn hello_handler(init: Init, invocations: ChannelReadStream<grpc::Invocation>) {
+    let translator = Translator {
+        client: init.right().map(translator_common::TranslatorClient),
+    };
     let translator = &translator;
 
     invocations
