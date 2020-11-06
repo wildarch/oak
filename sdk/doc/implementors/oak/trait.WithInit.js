@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["oak"] = [{"text":"impl Drop for Client","synthetic":false,"types":[]}];
+implementors["oak"] = [];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
