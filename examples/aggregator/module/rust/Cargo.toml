@@ -22,6 +22,7 @@ oak_services = "=0.1.0"
 prost = "*"
 serde = "*"
 toml = "*"
+serde_encoding = "*"
 
 [dev-dependencies]
 aggregator_grpc = "=0.1.0"

@@ -79,6 +79,41 @@ pub enum DecodeError<E> {
     Inject(oak::OakError),
 }
 
+use oak::{
+    io::{Decodable, Encodable},
+    OakError,
+};
+pub struct Bincoded<T>(pub T);
+
+impl<T> Bincoded<T> {
+    pub fn into_inner(self) -> T {
+        self.0
+    }
+}
+
+impl<T: for<'de> serde::Deserialize<'de> + HandleVisit + Clone> Decodable for Bincoded<T> {
+    fn decode(message: &Message) -> Result<Self, OakError> {
+        decode(message, bincode::deserialize)
+            .map_err(|e| match e {
+                DecodeError::Deserialize(_) => OakError::ProtobufDecodeError(None),
+                DecodeError::Inject(e) => e,
+            })
+            .map(Bincoded)
+    }
+}
+
+impl<T: serde::Serialize + HandleVisit + Clone> Encodable for Bincoded<T> {
+    fn encode(&self) -> Result<Message, OakError> {
+        encode(&self.0, bincode::serialize).map_err(|_| OakError::ProtobufDecodeError(None))
+    }
+}
+
+impl<T> AsRef<T> for Bincoded<T> {
+    fn as_ref(&self) -> &T {
+        &self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

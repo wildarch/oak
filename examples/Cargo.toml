@@ -45,6 +45,7 @@ oak_services = { path = "../oak_services" }
 oak_sign = { path = "../oak_sign" }
 oak_tests = { path = "../sdk/rust/oak_tests" }
 oak_utils = { path = "../oak_utils" }
+serde_encoding = { path = "../experimental/serde_encoding" }
 # Examples.
 abitest_grpc = { path = "abitest/grpc" }
 aggregator_grpc = { path = "aggregator/grpc" }

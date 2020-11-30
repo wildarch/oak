@@ -41,18 +41,16 @@ pub mod handler;
 pub mod router;
 
 use crate::{
-    handler::Handler,
-    proto::oak::examples::aggregator::{HandlerInit, RouterInit},
+    handler::{Handler, HandlerInit},
     router::Router,
 };
 use anyhow::Context;
 use log::info;
-use oak::{
-    io::Sender,
-    proto::oak::{application::ConfigMap, invocation::GrpcInvocationSender},
-};
+use oak::{io::Sender, proto::oak::application::ConfigMap};
 use oak_abi::label::{confidentiality_label, web_assembly_module_tag, Label};
 use oak_services::proto::oak::log::LogMessage;
+use router::RouterInit;
+use serde_encoding::Bincoded;
 
 #[derive(Debug, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -78,17 +76,15 @@ impl Main {
         // TODO(#1731): Split Aggregator into two Wasm modules and hardcode its SHA256 sum in the
         // first module.
         let init = RouterInit {
-            log_sender: Some(log_sender),
-            handler_invocation_sender: Some(GrpcInvocationSender {
-                sender: Some(handler_invocation_sender),
-            }),
+            log_sender,
+            handler_invocation_sender,
             aggregator_module_hash: aggregator_module_hash.to_string(),
         };
         let router_sender = oak::io::entrypoint_node_create::<Router, _, _>(
             "router",
             &Label::public_untrusted(),
             "app",
-            init,
+            Bincoded(init),
         )
         .context("Couldn't create router node")?;
         oak::grpc::server::init_with_sender(grpc_server_listen_address, router_sender)
@@ -109,16 +105,14 @@ impl Main {
         // Send the initialization message to Handler Node containing a gRPC server invocation
         // receiver and a gRPC client invocation sender.
         let init_message = HandlerInit {
-            log_sender: Some(log_sender),
-            grpc_client_invocation_sender: Some(GrpcInvocationSender {
-                sender: Some(grpc_client_invocation_sender),
-            }),
+            log_sender,
+            grpc_client_invocation_sender,
         };
         oak::io::entrypoint_node_create::<Handler, _, _>(
             "handler",
             &aggregator_hash_label,
             "app",
-            init_message,
+            Bincoded(init_message),
         )
         .map_err(|err| err.into())
     }

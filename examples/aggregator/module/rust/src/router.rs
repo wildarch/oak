@@ -14,8 +14,20 @@
 // limitations under the License.
 //
 
-use crate::proto::oak::examples::aggregator::RouterInit;
-use oak::io::{forward_invocation, Sender};
+use crate::proto::oak::log::LogMessage;
+use oak::{
+    io::{forward_invocation, Sender},
+    proto::oak::invocation::GrpcInvocation,
+};
+use serde::{Deserialize, Serialize};
+use serde_encoding::Bincoded;
+
+#[derive(Debug, Serialize, Deserialize, Default, oak::handle::HandleVisit, Clone)]
+pub struct RouterInit {
+    pub log_sender: Sender<LogMessage>,
+    pub handler_invocation_sender: Sender<GrpcInvocation>,
+    pub aggregator_module_hash: String,
+}
 
 /// A node that routes each incoming gRPC invocation to a Handler Node that can handle requests with
 /// the label of the incoming request.
@@ -38,15 +50,12 @@ impl oak::CommandHandler for Router {
 }
 
 impl oak::WithInit for Router {
-    type Init = RouterInit;
+    type Init = Bincoded<RouterInit>;
 
     fn create(init: Self::Init) -> Self {
-        oak::logger::init(init.log_sender.unwrap(), log::Level::Debug).unwrap();
-        let handler_invocation_sender = init
-            .handler_invocation_sender
-            .expect("Couldn't receive gRPC invocation sender")
-            .sender
-            .expect("Empty gRPC invocation sender");
+        let init = init.into_inner();
+        oak::logger::init(init.log_sender, log::Level::Debug).unwrap();
+        let handler_invocation_sender = init.handler_invocation_sender;
         Self {
             handler_invocation_sender,
         }

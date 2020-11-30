@@ -18,7 +18,7 @@ log = "*"
 oak_abi = "=0.1.0"
 oak_sign = "*"
 prost = "*"
-rustls = "*"
+rustls = "0.18"
 serde_json = "*"
 structopt = "*"
 # Pinned to 0.2 because of tonic: https://github.com/hyperium/tonic/blob/master/tonic/Cargo.toml

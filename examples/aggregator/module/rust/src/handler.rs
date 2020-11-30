@@ -16,17 +16,26 @@
 
 use crate::{
     data::SparseVector,
-    proto::oak::examples::aggregator::{
-        Aggregator, AggregatorClient, AggregatorDispatcher, HandlerInit, Sample,
+    proto::oak::{
+        examples::aggregator::{Aggregator, AggregatorClient, AggregatorDispatcher, Sample},
+        log::LogMessage,
     },
 };
 use aggregator_common::{AggregatorResult, ThresholdAggregator};
 use log::{debug, error};
-use oak::{grpc, io::Sender};
+use oak::{grpc, io::Sender, proto::oak::invocation::GrpcInvocation};
+use serde::{Deserialize, Serialize};
+use serde_encoding::Bincoded;
 use std::{collections::HashMap, convert::TryFrom};
 
 /// Currently threshold value is hardcoded.
 pub const SAMPLE_THRESHOLD: u64 = 5;
+
+#[derive(Debug, Serialize, Deserialize, Default, oak::handle::HandleVisit, Clone)]
+pub struct HandlerInit {
+    pub log_sender: Sender<LogMessage>,
+    pub grpc_client_invocation_sender: Sender<GrpcInvocation>,
+}
 
 /// Oak Node that collects and aggregates data.
 /// Data is collected in the `aggregators` map where keys are buckets and values are instances of a
@@ -122,15 +131,12 @@ impl Aggregator for Handler {
 }
 
 impl oak::WithInit for Handler {
-    type Init = HandlerInit;
+    type Init = Bincoded<HandlerInit>;
 
     fn create(init: Self::Init) -> Self {
-        oak::logger::init(init.log_sender.unwrap(), log::Level::Debug).unwrap();
-        let grpc_client_invocation_sender = init
-            .grpc_client_invocation_sender
-            .expect("Couldn't receive gRPC invocation sender")
-            .sender
-            .expect("Empty gRPC invocation sender");
+        let init = init.into_inner();
+        oak::logger::init(init.log_sender, log::Level::Debug).unwrap();
+        let grpc_client_invocation_sender = init.grpc_client_invocation_sender;
 
         Self::new(grpc_client_invocation_sender)
     }
