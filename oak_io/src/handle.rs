@@ -16,13 +16,13 @@
 include!(concat!(env!("OUT_DIR"), "/oak.handle.rs"));
 
 use crate::OakError;
-use log::error;
-use oak_abi::Handle;
+use log::{debug, error};
+use oak_abi::{Handle, OakStatus};
 
 /// Wrapper for a handle to the read half of a channel.
 ///
 /// For use when the underlying [`Handle`] is known to be for a receive half.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(PartialEq)]
 pub struct ReadHandle {
     pub handle: Handle,
 }
@@ -39,10 +39,24 @@ impl From<Handle> for ReadHandle {
     }
 }
 
+impl Clone for ReadHandle {
+    fn clone(&self) -> Self {
+        Self {
+            handle: clone_handle(self.handle),
+        }
+    }
+}
+
+impl Drop for ReadHandle {
+    fn drop(&mut self) {
+        drop_handle(self.handle);
+    }
+}
+
 /// Wrapper for a handle to the send half of a channel.
 ///
 /// For use when the underlying [`Handle`] is known to be for a send half.
-#[derive(Copy, Clone, PartialEq)]
+#[derive(PartialEq)]
 pub struct WriteHandle {
     pub handle: Handle,
 }
@@ -57,6 +71,38 @@ impl From<Handle> for WriteHandle {
     fn from(handle: Handle) -> Self {
         WriteHandle { handle }
     }
+}
+
+impl Clone for WriteHandle {
+    fn clone(&self) -> Self {
+        Self {
+            handle: clone_handle(self.handle),
+        }
+    }
+}
+
+impl Drop for WriteHandle {
+    fn drop(&mut self) {
+        drop_handle(self.handle);
+    }
+}
+
+fn clone_handle(handle: Handle) -> Handle {
+    let mut cloned_handle = 0;
+    let result = OakStatus::from_i32(unsafe {
+        oak_abi::handle_clone(handle, &mut cloned_handle as *mut Handle) as i32
+    })
+    .expect("handle_clone returned invalid oak status");
+    if result != OakStatus::Ok {
+        panic!("Failed to clone handle: {:?}", result);
+    }
+    cloned_handle
+}
+
+fn drop_handle(handle: Handle) {
+    // The channel may have already been closed, or it may be invalid due to extracting it for
+    // serialization, so we discard any errors here.
+    unsafe { oak_abi::channel_close(handle) };
 }
 
 /// Visit all handles present in a type.

@@ -67,7 +67,7 @@ pub mod proto {
 
 // Build a chunk of memory that is suitable for passing to oak_abi::wait_on_channels,
 // holding the given collection of channel handles.
-fn new_handle_space(handles: &[ReadHandle]) -> Vec<u8> {
+fn new_handle_space(handles: &[&ReadHandle]) -> Vec<u8> {
     let mut space = Vec::with_capacity(oak_abi::SPACE_BYTES_PER_HANDLE * handles.len());
     for handle in handles {
         space
@@ -94,7 +94,7 @@ fn prep_handle_space(space: &mut [u8]) {
 /// This is a convenience wrapper around the [`oak_abi::wait_on_channels`] host
 /// function. This version is easier to use in Rust but is less efficient
 /// (because the notification space is re-created on each invocation).
-pub fn wait_on_channels(handles: &[ReadHandle]) -> Result<Vec<ChannelReadStatus>, OakStatus> {
+pub fn wait_on_channels(handles: &[&ReadHandle]) -> Result<Vec<ChannelReadStatus>, OakStatus> {
     let mut space = new_handle_space(handles);
     unsafe {
         let status = oak_abi::wait_on_channels(space.as_mut_ptr(), handles.len() as u32);
@@ -123,7 +123,7 @@ pub fn wait_on_channels(handles: &[ReadHandle]) -> Result<Vec<ChannelReadStatus>
 /// resized to accommodate the information in the message; any data already
 /// held in the vectors will be overwritten.
 pub fn channel_read(
-    half: ReadHandle,
+    half: &ReadHandle,
     buf: &mut Vec<u8>,
     handles: &mut Vec<Handle>,
 ) -> Result<(), OakStatus> {
@@ -210,7 +210,7 @@ pub fn channel_read(
 }
 
 /// Write a message to a channel.
-pub fn channel_write(half: WriteHandle, buf: &[u8], handles: &[Handle]) -> Result<(), OakStatus> {
+pub fn channel_write(half: &WriteHandle, buf: &[u8], handles: &[Handle]) -> Result<(), OakStatus> {
     let handle_buf = crate::handle::pack(handles);
     let status = unsafe {
         oak_abi::channel_write(
@@ -227,7 +227,7 @@ pub fn channel_write(half: WriteHandle, buf: &[u8], handles: &[Handle]) -> Resul
 /// The same as [`channel_write`](#method.channel_write), but also applies the current Node's
 /// downgrade privilege when checking IFC restrictions.
 pub fn channel_write_with_downgrade(
-    half: WriteHandle,
+    half: &WriteHandle,
     buf: &[u8],
     handles: &[Handle],
 ) -> Result<(), OakStatus> {

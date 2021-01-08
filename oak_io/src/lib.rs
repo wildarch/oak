@@ -97,7 +97,7 @@ impl<L: Decodable, R: Decodable> Decodable for Either<L, R> {
 /// command messages. This is useful for patterns in which an Oak node needs some data at
 /// initialization time, but then handles commands of a different type and possibly coming from a
 /// different channel, to be processed in an event-loop pattern.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct InitWrapper<Init, Command: Decodable> {
     pub init: Init,
     pub command_receiver: Receiver<Command>,

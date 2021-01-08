@@ -86,12 +86,10 @@ oak::entrypoint!(grpc_fe<ConfigMap> => |_receiver| {
 
     oak::node_create("provider", &oak::node_config::wasm("app", "provider"), &Label::public_untrusted(), to_provider_read_handle)
         .expect("Failed to create provider");
-    oak::channel_close(to_provider_read_handle.handle).expect("Failed to close channel");
 
-    Sender::new(to_provider_write_handle)
+    Sender::new(to_provider_write_handle.clone())
         .send(&BlobStoreProviderSender { sender: Some(Sender::new(from_provider_write_handle)) })
         .expect("Failed to send handle to provider");
-    oak::channel_close(from_provider_write_handle.handle).expect("Failed to close channel");
 
     let frontend = BlobStoreFrontend::new(
             Sender::new(to_provider_write_handle),
@@ -111,7 +109,7 @@ oak::entrypoint!(provider<BlobStoreRequest> => |receiver: Receiver<BlobStoreRequ
     // but decoding to a different type.
     // TODO(#1584): Replace this with a more type safe pattern.
     let frontend_sender =
-        Receiver::<BlobStoreProviderSender>::new(receiver.handle).receive()
+        Receiver::<BlobStoreProviderSender>::new(receiver.handle.clone()).receive()
             .expect("Did not receive a decodable message")
             .sender
             .expect("No sender in received message");
@@ -127,7 +125,7 @@ oak::entrypoint!(store<BlobRequest> => |receiver: Receiver<BlobRequest>| {
     // but decoding to a different type.
     // TODO(#1584): Replace this with a more type safe pattern.
     let sender =
-        Receiver::<BlobStoreSender>::new(receiver.handle).receive()
+        Receiver::<BlobStoreSender>::new(receiver.handle.clone()).receive()
             .expect("Did not receive a write handle")
             .sender
             .expect("No write handle in received message");
@@ -238,14 +236,14 @@ impl oak::CommandHandler for BlobStoreProvider {
             &Label::public_untrusted(),
             to_store_read_handle,
         )?;
-        oak::channel_close(to_store_read_handle.handle).context("Could not close channel")?;
+        //oak::channel_close(to_store_read_handle.handle).context("Could not close channel")?;
 
-        Sender::new(to_store_write_handle)
+        Sender::new(to_store_write_handle.clone())
             .send(&BlobStoreSender {
                 sender: Some(Sender::new(from_store_write_handle)),
             })
             .context("Could not send value")?;
-        oak::channel_close(from_store_write_handle.handle).context("Could not close channel")?;
+        //oak::channel_close(from_store_write_handle.handle).context("Could not close channel")?;
 
         self.sender
             .send(&BlobStoreInterface {

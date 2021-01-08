@@ -32,6 +32,7 @@ pub fn configure_and_run(config: RuntimeConfiguration) -> Result<Arc<Runtime>, O
         &config.secure_server_configuration,
         &config.sign_table,
     );
+    proxy.set_as_current();
     let config_map = config.config_map.clone();
     let handle = proxy.start_runtime(config)?;
 

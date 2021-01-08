@@ -953,6 +953,16 @@ fn oak_resolve_func(
                 Some(ValueType::I32),
             ),
         ),
+        "handle_clone" => (
+            HANDLE_CLONE,
+            wasmi::Signature::new(
+                &[
+                    ValueType::I64, // handle
+                    ABI_USIZE,      // cloned_handle_out
+                ][..],
+                Some(ValueType::I32),
+            ),
+        ),
         "channel_close" => (
             CHANNEL_CLOSE,
             wasmi::Signature::new(

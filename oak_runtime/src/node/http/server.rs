@@ -20,12 +20,12 @@
 //! asynchronously.
 
 use crate::{
-    io::ReceiverExt,
+    io::{ReceiverExt, Sender},
     node::{
         http::util::{HttpError, Pipe},
         ConfigurationError, Node, NodePrivilege,
     },
-    proto::oak::invocation::HttpInvocationSender,
+    proto::oak::invocation::{HttpInvocation, HttpInvocationSender},
     RuntimeProxy,
 };
 use core::task::{Context, Poll};
@@ -228,7 +228,7 @@ impl Node for HttpServerNode {
         let startup_receiver = Receiver::<HttpInvocationSender>::new(ReadHandle {
             handle: startup_handle,
         });
-        let invocation_channel =
+        let invocation_sender =
             match startup_receiver
                 .receive(&runtime)
                 .and_then(|invocation_sender| {
@@ -236,7 +236,7 @@ impl Node for HttpServerNode {
                         .sender
                         .ok_or(OakError::OakStatus(OakStatus::ErrBadHandle))
                 }) {
-                Ok(sender) => sender.handle.handle,
+                Ok(sender) => sender,
                 Err(status) => {
                     error!(
                         "Failed to retrieve invocation channel write handle: {:?}",
@@ -255,7 +255,7 @@ impl Node for HttpServerNode {
         // Build a service to process all incoming HTTP requests.
         let generic_handler = HttpRequestHandler {
             runtime,
-            invocation_channel,
+            invocation_sender,
         };
         let server = self.make_server(generic_handler, notify_receiver);
 
@@ -293,8 +293,8 @@ fn create_async_runtime() -> tokio::runtime::Runtime {
 struct HttpRequestHandler {
     /// Reference to the Runtime in the context of this HTTP server pseudo-Node.
     runtime: RuntimeProxy,
-    /// Channel handle used for writing HTTP invocations.
-    invocation_channel: oak_abi::Handle,
+    /// Used for writing HTTP invocations.
+    invocation_sender: Sender<HttpInvocation>,
 }
 
 impl HttpRequestHandler {
@@ -385,7 +385,7 @@ impl HttpRequestHandler {
         pipe.insert_message(&self.runtime, request)?;
 
         // Send an invocation message (with attached handles) to the Oak Node.
-        pipe.send_invocation(&self.runtime, self.invocation_channel)?;
+        pipe.send_invocation(&self.runtime, &self.invocation_sender)?;
 
         // Close all local handles except for the one that allows reading responses.
         pipe.close(&self.runtime);

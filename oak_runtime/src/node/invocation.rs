@@ -46,7 +46,7 @@ pub trait InvocationExt {
     fn close(&self, runtime: &RuntimeProxy) {
         match self.receiver() {
             Some(receiver) => {
-                let receiver = oak_io::Receiver::<Self::Request>::new(receiver.handle);
+                let receiver = oak_io::Receiver::<Self::Request>::new(receiver.handle.clone());
                 if let Err(err) = receiver.close(runtime) {
                     error!("Failed to close receiver channel in invocation: {:?}", err);
                 }
@@ -55,7 +55,7 @@ pub trait InvocationExt {
         };
         match self.sender() {
             Some(sender) => {
-                let sender = oak_io::Sender::<Self::Response>::new(sender.handle);
+                let sender = oak_io::Sender::<Self::Response>::new(sender.handle.clone());
                 if let Err(err) = sender.close(runtime) {
                     error!("Failed to close sender channel in invocation: {:?}", err);
                 }

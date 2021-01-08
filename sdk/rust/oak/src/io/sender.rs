@@ -42,18 +42,26 @@ impl<T: Encodable> SenderExt<T> for Sender<T> {
 
     fn send(&self, t: &T) -> Result<(), OakError> {
         let message = t.encode()?;
-        crate::channel_write(self.handle, &message.bytes, &message.handles)?;
+        crate::channel_write(&self.handle, &message.bytes, &message.handles)?;
+        drop_handles(message);
         Ok(())
     }
 
     fn send_with_downgrade(&self, t: &T) -> Result<(), OakError> {
         let message = t.encode()?;
-        crate::channel_write_with_downgrade(self.handle, &message.bytes, &message.handles)?;
+        crate::channel_write_with_downgrade(&self.handle, &message.bytes, &message.handles)?;
+        drop_handles(message);
         Ok(())
     }
 
     fn label(&self) -> Result<Label, OakError> {
         let label = crate::channel_label_read(self.handle.handle)?;
         Ok(label)
+    }
+}
+
+fn drop_handles(msg: oak_io::Message) {
+    for handle in msg.handles {
+        let _ = crate::channel_close(handle);
     }
 }

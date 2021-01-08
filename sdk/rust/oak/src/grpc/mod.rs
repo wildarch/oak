@@ -267,16 +267,14 @@ where
     // Build an Invocation holding the two channels and send it down the
     // specified channel.
     let invocation = Invocation {
-        receiver: Some(req_receiver.clone()),
-        sender: Some(rsp_sender.clone()),
+        receiver: Some(req_receiver),
+        sender: Some(rsp_sender),
     };
 
     // TODO(#1739): Don't use privilege automatically.
     invocation_channel
         .send_with_downgrade(&invocation)
         .expect("failed to write invocation to channel");
-    req_receiver.close().expect("failed to close channel");
-    rsp_sender.close().expect("failed to close channel");
 
     Ok(rsp_receiver)
 }

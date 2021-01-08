@@ -26,7 +26,7 @@ use prost::{
 /// For use when the underlying [`Handle`] is known to be for a send half.
 ///
 /// [`Handle`]: crate::Handle
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Sender<T: Encodable> {
     pub handle: WriteHandle,
     phantom: std::marker::PhantomData<T>,

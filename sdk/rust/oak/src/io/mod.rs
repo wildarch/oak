@@ -56,15 +56,7 @@ pub fn node_create<T: Encodable + Decodable>(
     node_config: &crate::NodeConfiguration,
 ) -> Result<Sender<T>, OakStatus> {
     let (sender, receiver) = channel_create(&format!("{}-in", name), label)?;
-    match crate::node_create(name, node_config, label, receiver.handle) {
-        Ok(_) => {}
-        Err(e) => {
-            let _ = sender.close();
-            let _ = receiver.close();
-            return Err(e);
-        }
-    };
-    receiver.close()?;
+    crate::node_create(name, node_config, label, receiver.handle)?;
     Ok(sender)
 }
 
@@ -76,15 +68,7 @@ pub fn node_create_with_downgrade<T: Encodable + Decodable>(
     node_config: &crate::NodeConfiguration,
 ) -> Result<Sender<T>, OakStatus> {
     let (sender, receiver) = channel_create_with_downgrade(&format!("{}-in", name), label)?;
-    match crate::node_create_with_downgrade(name, node_config, label, receiver.handle) {
-        Ok(_) => {}
-        Err(e) => {
-            let _ = sender.close();
-            let _ = receiver.close();
-            return Err(e);
-        }
-    };
-    receiver.close()?;
+    crate::node_create_with_downgrade(name, node_config, label, receiver.handle)?;
     Ok(sender)
 }
 
