@@ -606,6 +606,28 @@
 <span id="603">603</span>
 <span id="604">604</span>
 <span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
 </pre><div class="example-wrap"><pre class="rust ">
 <span class="comment">//</span>
 <span class="comment">// Copyright 2020 The Project Oak Authors</span>
@@ -732,7 +754,7 @@
             .<span class="ident">runtime_health_check</span>
             .<span class="ident">set</span>(<span class="number">1</span>);
 
-        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;oak_unsafe&quot;</span>)]</span>
+        <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;oak-unsafe&quot;</span>)]</span>
         <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="ident">port</span>) <span class="op">=</span> <span class="ident">runtime_configuration</span>.<span class="ident">introspect_port</span> {
             <span class="self">self</span>.<span class="ident">runtime</span>
                 .<span class="ident">aux_servers</span>
@@ -950,7 +972,7 @@
         <span class="ident">result</span>
     }
 
-    <span class="doccomment">/// See [`Runtime::wait_on_channels`].</span>
+    <span class="doccomment">/// Calls [`Runtime::wait_on_channels`] without using the Node&#39;s privilege.</span>
     <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wait_on_channels</span>(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         <span class="ident">read_handles</span>: <span class="kw-2">&amp;</span>[<span class="ident">oak_abi</span>::<span class="ident">Handle</span>],
@@ -965,6 +987,28 @@
             .<span class="ident">wait_on_channels</span>(<span class="self">self</span>.<span class="ident">node_id</span>, <span class="ident">read_handles</span>, <span class="ident">Downgrading</span>::<span class="ident">No</span>);
         <span class="macro">debug</span><span class="macro">!</span>(
             <span class="string">&quot;{:?}: wait_on_channels(count={}) -&gt; {:?}&quot;</span>,
+            <span class="self">self</span>.<span class="ident">get_debug_id</span>(),
+            <span class="ident">read_handles</span>.<span class="ident">len</span>(),
+            <span class="ident">result</span>
+        );
+        <span class="ident">result</span>
+    }
+
+    <span class="doccomment">/// Calls [`Runtime::wait_on_channels`] using the Node&#39;s privilege.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">wait_on_channels_with_downgrade</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">read_handles</span>: <span class="kw-2">&amp;</span>[<span class="ident">oak_abi</span>::<span class="ident">Handle</span>],
+    ) <span class="op">-</span><span class="op">&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">ChannelReadStatus</span><span class="op">&gt;</span>, <span class="ident">OakStatus</span><span class="op">&gt;</span> {
+        <span class="macro">debug</span><span class="macro">!</span>(
+            <span class="string">&quot;{:?}: wait_on_channels_with_downgrade(count={})&quot;</span>,
+            <span class="self">self</span>.<span class="ident">get_debug_id</span>(),
+            <span class="ident">read_handles</span>.<span class="ident">len</span>()
+        );
+        <span class="kw">let</span> <span class="ident">result</span> <span class="op">=</span> <span class="self">self</span>
+            .<span class="ident">runtime</span>
+            .<span class="ident">wait_on_channels</span>(<span class="self">self</span>.<span class="ident">node_id</span>, <span class="ident">read_handles</span>, <span class="ident">Downgrading</span>::<span class="ident">Yes</span>);
+        <span class="macro">debug</span><span class="macro">!</span>(
+            <span class="string">&quot;{:?}: wait_on_channels_with_downgrade(count={}) -&gt; {:?}&quot;</span>,
             <span class="self">self</span>.<span class="ident">get_debug_id</span>(),
             <span class="ident">read_handles</span>.<span class="ident">len</span>(),
             <span class="ident">result</span>
